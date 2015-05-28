@@ -20,12 +20,10 @@ public:
 			if (voxels) free(voxels); 
 		}
 
-		void commit()
+		void commit(bool do_anyway = false)
 		{
-			if (mod)
+			if (mod | do_anyway)
 			{
-
-
 				ospCommit((osp::ManagedObject *)ospv);
 				mod = false;
 			}
@@ -155,7 +153,6 @@ private:
 			}
 		}
 
-		OSPVolume						ospVolume;
 		bool 								shared;
 
 		int 							  x, y, z;

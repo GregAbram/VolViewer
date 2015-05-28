@@ -141,6 +141,7 @@ int main(int argc, char *argv[])
   for (int t = 0; t < nt; t++)
   {
 		ispc::PerlinT(scalars, xsz, ysz, zsz, t*delta_t);
+		renderer.getVolume()->commit(true);
 		renderer.getVolume()->ResetMinMax();
 
 		camvar->ResetCount();
