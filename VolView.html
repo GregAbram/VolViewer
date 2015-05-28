@@ -1,0 +1,148 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="1187.4">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+    p.p3 {margin: 0.0px 0.0px 0.0px 0.0px; font: 18.0px Helvetica}
+    p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; font: 18.0px Helvetica; min-height: 22.0px}
+  </style>
+</head>
+<body>
+<p class="p1">With apologies, the build process here is pretty crude.<span class="Apple-converted-space">  </span>In particular, I haven't figured out how to use cmake with ISPC, so the directories that build ISPC stuff get built using a Makefile, which you'll have to edit to point to appropriate places for OSPRay and ISPC.</p>
+<p class="p2"><br></p>
+<p class="p3"><b>1. Build ispc VisRenderer</b></p>
+<p class="p2"><b></b><br></p>
+<p class="p1">This is a customization of the OSPRay RaycastVolumeRenderer to handle implicit slicing planes and multiple light sources. <span class="Apple-converted-space">  </span>Hopefully will eventually show up in OSPRay.<span class="Apple-converted-space">  </span>Note that this uses a simple Makefile and builds in place.</p>
+<p class="p2"><b></b><br></p>
+<p class="p1">cd VolumeViewer/src/ispc</p>
+<p class="p2"><br></p>
+<p class="p1">- edit the Makefile to point to the OSPRay source and ISPC compiler</p>
+<p class="p2"><br></p>
+<p class="p1">make</p>
+<p class="p2"><br></p>
+<p class="p1">Should create libvis.so</p>
+<p class="p2"><br></p>
+<p class="p3"><b>2.<span class="Apple-converted-space">  </span>Build common library</b></p>
+<p class="p2"><b></b><br></p>
+<p class="p1">These are various classes to handle common functionality between the Viewer and Cinema versions.</p>
+<p class="p2"><br></p>
+<p class="p1">cd VolumeViewer/sr</p>
+<p class="p1">mkdir common.obj</p>
+<p class="p2"><br></p>
+<p class="p1">Note the name of this object directory - other stuff will depend on it, so don't get creative here</p>
+<p class="p2"><br></p>
+<p class="p1">cd common.obj</p>
+<p class="p1">cmake<span class="Apple-converted-space">  </span>-DOSPRAY_SRCDIR=<i>wherever </i>../common</p>
+<p class="p2"><br></p>
+<p class="p1">You'll need to set OSPRAY_SRCDIR to point to the OSPRay source</p>
+<p class="p2"><br></p>
+<p class="p1">make</p>
+<p class="p2"><br></p>
+<p class="p1">should create libcommon.so</p>
+<p class="p2"><br></p>
+<p class="p3"><b>3.<span class="Apple-converted-space">  </span>Build the viewer</b></p>
+<p class="p2"><b></b><br></p>
+<p class="p1">This is a GUI for interactive viewing of volumes.<span class="Apple-converted-space">   </span></p>
+<p class="p2"><br></p>
+<p class="p1">cd VolumeViewer/src</p>
+<p class="p1">mkdir viewer.obj</p>
+<p class="p2"><br></p>
+<p class="p1">Note the name of this object directory - other stuff will depend on it, so don't get creative here</p>
+<p class="p2"><br></p>
+<p class="p1">cd common.obj</p>
+<p class="p1">cmake<span class="Apple-converted-space">  </span>-DOSPRAY_SRCDIR=<i>wherever -</i>DOSPRAY_OBJDIR=<i>wherever </i>../viewer</p>
+<p class="p2"><br></p>
+<p class="p1">You'll need to set OSPRAY_SRCDIR to point to the OSPRay source and OSPRAY_OBJDIR to point to wherever you built OSPRay. <span class="Apple-converted-space">  </span>You'll need Qt for this.</p>
+<p class="p2"><br></p>
+<p class="p1">make</p>
+<p class="p2"><br></p>
+<p class="p1">should create<span class="Apple-converted-space"> </span></p>
+<p class="p2"><br></p>
+<p class="p3"><b>4.<span class="Apple-converted-space">  </span>Build the Cinema library and test executable</b></p>
+<p class="p2"><b></b><br></p>
+<p class="p1">This is the library used to instrument a simulation and create Cinema databases.</p>
+<p class="p2"><br></p>
+<p class="p1">cd VolumeViewer/src</p>
+<p class="p1">mkdir viewer.obj</p>
+<p class="p2"><br></p>
+<p class="p1">Note the name of this object directory - other stuff will depenjkjd on it, so don't get creative here</p>
+<p class="p2"><br></p>
+<p class="p1">cd common.obj</p>
+<p class="p1">cmake<span class="Apple-converted-space">  </span>-DOSPRAY_SRCDIR=<i>wherever -</i>DOSPRAY_OBJDIR=<i>wherever </i>../viewer</p>
+<p class="p2"><br></p>
+<p class="p1">You'll need to set OSPRAY_SRCDIR to point to the OSPRay source and OSPRAY_OBJDIR to point to wherever you built OSPRay. <span class="Apple-converted-space"> </span></p>
+<p class="p2"><br></p>
+<p class="p1">make</p>
+<p class="p2"><br></p>
+<p class="p3"><b>5.<span class="Apple-converted-space">  </span>Build the Perlin simulation simulation. <span class="Apple-converted-space"> </span></b></p>
+<p class="p2"><br></p>
+<p class="p1">This code evolves a 3D noise function through time to simulate a simulation. <span class="Apple-converted-space">  </span>A library - libperlin.so implements the noise function (using ISPC).<span class="Apple-converted-space">  </span>Two executables are included: <b>dump</b>, which can be used to write a test timestep, and <b>sim</b>, which runs through a set of time steps and uses the Cinema library to generate a Cinema database.</p>
+<p class="p2"><br></p>
+<p class="p1">cd VolumeViewer/src/perlin</p>
+<p class="p2"><br></p>
+<p class="p1">- edit the Makefile to point to the OSPRay source and ISPC compiler</p>
+<p class="p2"><br></p>
+<p class="p1">make</p>
+<p class="p2"><br></p>
+<p class="p3"><b>6.<span class="Apple-converted-space">  </span>Set PATH and LD_LIBRARY_PATH environment variables</b></p>
+<p class="p2"><b></b><br></p>
+<p class="p1">you will need to do wo to run this stuff from the command line.</p>
+<p class="p2"><br></p>
+<p class="p1">cd VolViewer</p>
+<p class="p2"><br></p>
+<p class="p1">-- edit <b>vv.env</b> to set <b>VOLVIEWER_ROOT </b>to point to the directory containing the VolViewer code and <b>OSPRAY_RELEASE</b> to point tot he directory where you built<span class="Apple-converted-space">  </span>OSPRay.</p>
+<p class="p2"><br></p>
+<p class="p1">. vv.env</p>
+<p class="p2"><br></p>
+<p class="p1">Note - you'll have to twiddle this if you use anything other than bash.</p>
+<p class="p2"><br></p>
+<p class="p3"><b>7.<span class="Apple-converted-space">  </span>Create test dataset</b></p>
+<p class="p2"><b></b><br></p>
+<p class="p1">In this step we will (try to) use the Perlin <b>dump</b> program to create a test dataset</p>
+<p class="p2"><br></p>
+<p class="p1">cd VolumeViewer</p>
+<p class="p1">mkdir test</p>
+<p class="p1">cd test</p>
+<p class="p1">dump -r 256 256 256</p>
+<p class="p2"><br></p>
+<p class="p1">This should create two files: <b>data.raw</b> containing 256x256x256 flowting point numbers and <b>data.vol</b> to describe it.</p>
+<p class="p2"><br></p>
+<p class="p3"><b>8. View the test dataset</b></p>
+<p class="p2"><b></b><br></p>
+<p class="p1">viewer<span class="Apple-converted-space"> </span></p>
+<p class="p1">File-&gt;Open</p>
+<p class="p1">select <b>data.vol</b></p>
+<p class="p2"><b></b><br></p>
+<p class="p1">You might need to mouse-down and drag in the window to get it to show up.<span class="Apple-converted-space">  </span>Now you can use the slicing planes to clip and optionally be visible, and enable and set isovalues.<span class="Apple-converted-space">  </span>To see anything inside the volume you'll need to move the slider next to the transfer function way down.</p>
+<p class="p2"><br></p>
+<p class="p1">File-&gt;Save State</p>
+<p class="p1">save as <b>test.state</b></p>
+<p class="p2"><b></b><br></p>
+<p class="p1">Now exit and restart:</p>
+<p class="p2"><br></p>
+<p class="p1">viewer test.state</p>
+<p class="p2"><br></p>
+<p class="p1">You'll be back to where you were. <span class="Apple-converted-space">  </span>Note that isosurfaces might not show up until you tweak the appropriate sliders.</p>
+<p class="p2"><br></p>
+<p class="p3"><b>9.<span class="Apple-converted-space">  </span>Test the Cinema library</b></p>
+<p class="p4"><b></b><br></p>
+<p class="p1">For this we use <b>test_cinema</b>, for which source is in the <b>cinema</b> source directory. <span class="Apple-converted-space">  </span>This uses the single timestep dataset built earlier.<span class="Apple-converted-space">  </span>By default, this is generates images varying for a 3 values of phi, 3 isovalues and 12 values of theta, for 108 total images, with ancillary data files and info.json making up a Cinema database.</p>
+<p class="p2"><br></p>
+<p class="p1">test_cinema -s 512 512 test.state</p>
+<p class="p2"><br></p>
+<p class="p1"><b>10.<span class="Apple-converted-space">  </span>Run the simulation simulation</b></p>
+<p class="p1">Now we do the same thing using the perlin noise simulation. <span class="Apple-converted-space">  </span><b>Note: this will not recreate or overwrite older files of the same name.</b><span class="Apple-converted-space">  </span>This is a <i>feature</i> so the thing can be restarted.</p>
+<p class="p2"><br></p>
+<p class="p1">rm *.png *.__data__ info.json</p>
+<p class="p1">sim -s 512 512 -r 256 256 256 -t 0.05 20 test.stat</p>
+<p class="p2"><br></p>
+<p class="p1">I forget exactly what options are set here, but this will run through 20 time steps, creating a Cinema database. <span class="Apple-converted-space">  </span>This will generate a *lot* of frames.</p>
+<p class="p2"><br></p>
+</body>
+</html>

@@ -17,7 +17,7 @@ using namespace std;
 void
 syntax(char *a)
 {
-    cerr << "syntax: " << a << " [options] statefile\n";
+    cerr << "syntax: " << a << " [options]\n";
     cerr << "options:\n";
     cerr << "  -r xres yres zres  overall grid resolution (512x512x512)\n";
     cerr << "  -O octave          noise octave (4)\n";
@@ -30,7 +30,6 @@ int main(int argc, char *argv[])
 {
   int xsz = 512, ysz = 512, zsz = 512;
   float t = 3.1415926;
-	char *filename = (char *)"data.raw";
 
   for (int i = 1; i < argc; i++)
     if (argv[i][0] == '-') 
@@ -44,12 +43,7 @@ int main(int argc, char *argv[])
 				case 'O': ispc::SetOctaveCount(atoi(argv[++i])); break;
 				default:  syntax(argv[0]);
 			}
-		else if (filename == NULL)
-			filename = argv[i];
 		else
-			syntax(argv[0]);
-
-	if (! filename)
 			syntax(argv[0]);
 
 	ospInit(&argc, (const char **)argv);
@@ -66,8 +60,12 @@ int main(int argc, char *argv[])
 	ispc::PerlinT(scalars, xsz, ysz, zsz, 0.0);
 	volume.ResetMinMax();
 
-	ofstream f(filename, ofstream::binary);
+	ofstream f("data.raw", ofstream::binary);
 	f.write((char *)scalars, np*sizeof(float));
 	f.close();
+
+	ofstream v("data.vol");
+	v << xsz << " " << ysz << " " << zsz << " float data.raw\n";
+	v.close();
 }
 

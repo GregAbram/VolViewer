@@ -72,7 +72,7 @@ int main(int argc, char *argv[]) {
 	renderer.getWindow().resize(w, h);
 	renderer.Load(std::string(filename));
 
-#if 0
+#if 1
 	vector<int> phis;
 	int d = 20 / 2;
 	for (int i = 0; i < 3; i++)
@@ -84,16 +84,16 @@ int main(int argc, char *argv[]) {
 		thetas.push_back(i*d);
 #else
 	vector<int> phis;
-	phis.push_back(0);
+	phis.push_back(30);
 
 	vector<int> thetas;
-	thetas.push_back(0);
+	thetas.push_back(50);
 #endif
 
 	CameraVariable *camvar = new CameraVariable(phis, thetas);
 	cinema.AddVariable(camvar);
 
-#if 1
+#if 0
 	{
 		vector<int> clips;
 		clips.push_back(1);
@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
 	}
 #endif
 
-#if 0
+#if 1
 	vector<int> doVR;
 	doVR.push_back(0);
 	// doVR.push_back(1);

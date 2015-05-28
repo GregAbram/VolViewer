@@ -51,7 +51,7 @@ cinema_setup(Renderer& renderer, Cinema& cinema)
 	CameraVariable *camvar = new CameraVariable(phis, thetas);
 	cinema.AddVariable(camvar);
 
-#if 1
+#if 0
 	vector<int> clips;
 	clips.push_back(0);
 
