@@ -45,6 +45,29 @@ inline void addRGBAZ(uniform Tile &tile, const varying uint32 i,
   tile.z[i] += z;
 }
 
+vec3f VisRenderer_computeTotalLambertialIntensity(VisRenderer *uniform renderer, vec3f point, vec3f normal)
+{
+	vec3f lightDirection;
+	float lightDistance;
+
+	vec3f totalRadiance = make_vec3f(0.0, 0.0, 0.0);
+	for (uniform int i = 0; i < renderer->numLights; i++)
+	{
+		vec3f lightRadiance = renderer->lights[i]->computeRadiance(renderer->lights[i], point, lightDirection, lightDistance);
+
+		float cosNL;
+		if (isnan(normal.x + normal.y + normal.z))
+			cosNL = 1.0f;
+		else
+		{
+			cosNL = dot(normalize(lightDirection), normalize(normal));			
+			if (cosNL < 0) cosNL = 0.0;
+		}
+		totalRadiance = totalRadiance + cosNL * lightRadiance;
+	}
+	return totalRadiance;
+}
+
 void VisRenderer_renderTile(uniform Renderer *uniform self, uniform Tile &tile)
 {
   uniform FrameBuffer *uniform fb     = self->fb;
@@ -212,12 +235,11 @@ inline void VisRenderer_computeSliceSample(VisRenderer *uniform renderer,
 			const float sample = volume->computeSample(volume, hit);
 			const vec3f sampleColor = volume->transferFunction->getColorForValue(volume->transferFunction, sample);
 			const float opacity = volume->transferFunction->getOpacityForValue(volume->transferFunction, sample);
-	
-			vec3f lightDirection; float lightDistance;
-			vec3f lightRadiance = renderer->lights[0]->computeRadiance(renderer->lights[0], hit, lightDirection, lightDistance);
+
+			vec3f totalRadiance = VisRenderer_computeTotalLambertialIntensity(renderer, hit, renderer->slicenorms[sliceHit]);
 			
-			const float cosNL = abs(dot(normalize(lightDirection), normalize(renderer->slicenorms[sliceHit])));
-			const vec3f litColor = sampleColor * cosNL * lightRadiance;
+			const float ambient = 0.1f;
+			const vec3f litColor = sampleColor * (ambient + ((1.f - ambient)* totalRadiance));
 
 			color = make_vec4f(litColor.x, litColor.y, litColor.z, 1.0);
     }
@@ -232,29 +254,25 @@ inline void VisRenderer_computeVolumeSample(VisRenderer *uniform renderer,
   //! Advance the ray.
   volume->intersect(volume, ray);  if (ray.t > ray.t1) return;
 
+	vec3f coordinates = ray.org + ray.t * ray.dir;
+
   //! Sample the volume at the hit point in world coordinates.
-  const float sample = volume->computeSample(volume, ray.org + ray.t * ray.dir);
+  const float sample = volume->computeSample(volume, coordinates);
 
   //! Look up the color associated with the volume sample.
   vec3f sampleColor = volume->transferFunction->getColorForValue(volume->transferFunction, sample);
 
   //! Compute gradient shading, if enabled.
-  if(volume->gradientShadingEnabled) {
-
-    //! Compute lighting.
-    vec3f lightDirection;
-    float lightDistance;
-    vec3f lightRadiance = renderer->lights[0]->computeRadiance(renderer->lights[0], ray.org + ray.t * ray.dir, lightDirection, lightDistance);
+  if (volume->gradientShadingEnabled) {
 
     //! Constant ambient lighting term.
-    const float ambient = 0.1f;
 
     //! Use volume gradient as the normal.
-    const vec3f gradient = normalize(volume->computeGradient(volume, ray.org + ray.t * ray.dir));
-
-    const float cosNL = isnan(gradient.x+gradient.y+gradient.z) ? 1.f : abs(dot(normalize(lightDirection), normalize(gradient)));
-
-    sampleColor = sampleColor * (ambient + cosNL*(1.f-ambient)) * lightRadiance;
+    const vec3f gradient = normalize(volume->computeGradient(volume, coordinates));
+		vec3f totalRadiance = VisRenderer_computeTotalLambertialIntensity(renderer, coordinates, gradient);
+			
+    const float ambient = 0.1f;
+		sampleColor = sampleColor * (ambient + ((1.f - ambient)* totalRadiance));
   }
 
   //! Look up the opacity associated with the volume sample.
@@ -317,34 +335,16 @@ inline void VisRenderer_computeIsosurfaceSample(VisRenderer *uniform renderer,
       //! Isosurface hit point.
       const vec3f coordinates = ray.org + tHit * ray.dir;
 
-      //! Compute lighting.
-      vec3f lightDirection;
-      float lightDistance;
-      vec3f lightRadiance = renderer->lights[0]->computeRadiance(renderer->lights[0], coordinates, lightDirection, lightDistance);
-
-      //! Constant ambient lighting term.
-      const float ambient = 0.1f;
-
-      //! Use volume gradient as the normal.
-      const vec3f gradient = normalize(volume->computeGradient(volume, coordinates));
-
-#if 0
-      const float cosNL = isnan(gradient.x+gradient.y+gradient.z) ? 1.f : abs(dot(normalize(lightDirection), normalize(gradient)));
-#else
-			float cosNL;
-			if (isnan(gradient.x + gradient.y + gradient.z))
-				cosNL = 1.0f;
-			else
-			{
-				cosNL = dot(normalize(lightDirection), normalize(gradient));			
-				if (cosNL < 0) cosNL = 0.0;
-			}
-#endif
-				
       //! Look up the color associated with the isovalue.
       vec3f sampleColor = volume->transferFunction->getColorForValue(volume->transferFunction, isovalueHit);
 
-      sampleColor = sampleColor * (ambient + cosNL*(1.f-ambient)) * lightRadiance;
+			//! Use volume gradient as the normal.
+			const vec3f gradient = normalize(volume->computeGradient(volume, coordinates));
+
+			vec3f totalRadiance = VisRenderer_computeTotalLambertialIntensity(renderer, coordinates, gradient);
+
+      const float ambient = 0.1f;
+      sampleColor = sampleColor * (ambient + ((1.f-ambient) * totalRadiance));
 
       //! Assume fully opaque isosurfaces for now.
       const float sampleOpacity = 1.f;
@@ -630,6 +630,10 @@ export void VisRenderer_setLights(void *uniform pointer,
 
   //! Set the light sources.
   renderer->lights = (Light **uniform) lights;
+
+	uniform int i;
+	for (i = 0; renderer->lights[i] != NULL; i++);
+	renderer->numLights = i;
 }
 
 export void VisRenderer_setModel(void *uniform pointer, 

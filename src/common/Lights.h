@@ -40,6 +40,7 @@ public:
 	{
 		Light l(x, y, z, r, g, b);
 	  lights.push_back(l);
+		std::cerr << "ADD LIGHT " << x << " " << y << " " << z << "\n";
 	}
 
 	void commit(OSPRenderer r)

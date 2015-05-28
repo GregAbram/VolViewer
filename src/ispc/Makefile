@@ -23,4 +23,4 @@ libvis.so: ${ISPC_LIST:.ispc=.io} ${CPP_LIST:.cpp=.o}
 	${CXX} -fPIC -fPIC -DDEBUG -g -shared -Wl,-soname,libvis.so -o libvis.so ${ISPC_LIST:.ispc=.io} ${CPP_LIST:.cpp=.o}
 
 
-clean: ; rm -rf */*.io */*.o */*.idep */*_ispc.h libvis.so
+clean: ; rm -rf *.io *.o *.idep *_ispc.h libvis.so

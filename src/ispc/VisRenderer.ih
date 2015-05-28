@@ -35,6 +35,7 @@ struct VisRenderer {
   //! Renderer state. TODO: camera&model already in inherited!
   Camera *uniform camera;  Light **uniform lights;  Model *uniform model;  Model *uniform dynamicModel;
 
+	int     numLights;
   vec3f  *uniform slicenorms;  
 	float  *uniform sliceds; 
 	uniform int 		sliceCount; 
