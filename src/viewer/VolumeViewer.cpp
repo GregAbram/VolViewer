@@ -44,12 +44,11 @@ VolumeViewer::VolumeViewer(bool showFrameRate)
 
   //! Commit the transfer function only after the initial colors and alphas have been set (workaround for Qt signalling issue).
 	getTransferFunctionEditor().getTransferFunction().commit(renderer);
-	slicesEditor.commit(renderer);
+	slicesEditor.commit(renderer, &volume);
 	isosEditor.commit(&volume);
 
   //! Show the window.
   show();
-
 }
 
 void VolumeViewer::importFromFile(const std::string &filename) {
@@ -72,6 +71,15 @@ void VolumeViewer::importFromFile(const std::string &filename) {
 	ospCommit(dmodel);
 	ospSetObject(renderer, "dynamic_model", dmodel);
 
+	int x, y, z;
+	volume.GetDimensions(x, y, z);
+
+	int m = x > y ? x > z ? x : z : y > z ? y : z;
+
+	getWindow()->getCamera().setPos(x/2.0, y/2.0, -(3*m - z/2.0));
+	getWindow()->getCamera().setDir(0.0, 0.0, 3*m);
+	getWindow()->getCamera().commit();
+
 	ospCommit(renderer);
 
 }
@@ -85,6 +93,15 @@ VolumeViewer::openVolume()
     return;
 
 	importFromFile(filename.toStdString());
+
+	float vmin, vmax;
+	volume.GetMinMax(vmin, vmax);
+	getTransferFunctionEditor().getTransferFunction().SetMin(vmin);
+	getTransferFunctionEditor().getTransferFunction().SetMax(vmax);
+	getTransferFunctionEditor().commit();
+
+	osprayWindow->setRenderingEnabled(true);
+	render();
 }
 
 void VolumeViewer::loadColorMap()
@@ -159,7 +176,7 @@ void VolumeViewer::saveState()
 
 void VolumeViewer::commitSlices()
 {
-	slicesEditor.commit(renderer);
+	slicesEditor.commit(renderer, &volume);
 	ospCommit(renderer);
 	render();
 }

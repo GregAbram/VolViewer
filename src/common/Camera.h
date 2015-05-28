@@ -40,40 +40,30 @@ public:
 	void getDir(float* d) { d[0] = dir.x; d[1] = dir.y; d[2] = dir.z; }
 	void getUp(float* u)  { u[0] = up.x;  u[1] = up.y;  u[2] = up.z; }
 
-	void setPos(osp::vec3f f)  { pos    = f; modified = true;}
-	void setDir(osp::vec3f a)  { dir    = a; modified = true;}
+	void setPos(osp::vec3f f)  { pos    = f; center = pos + dir; dist = length(dir); modified = true;}
+	void setDir(osp::vec3f a)  { dir    = a; center = pos + dir; dist = length(dir); modified = true;}
 	void setUp(osp::vec3f u)   { up     = u; modified = true;}
 
-	void setPos(float *p) { pos = osp::vec3f(p[0], p[1], p[2]); modified = true; }
-	void setDir(float *d) { dir = osp::vec3f(d[0], d[1], d[2]); modified = true; }
+	void setPos(float *p) { pos = osp::vec3f(p[0], p[1], p[2]); center = pos + dir; dist = length(dir); modified = true; }
+	void setDir(float *d) { dir = osp::vec3f(d[0], d[1], d[2]); center = pos + dir; dist = length(dir); modified = true; }
 	void setUp(float *u)  { up  = osp::vec3f(u[0], u[1], u[2]); modified = true; }
+
+	void setPos(float x, float y, float z) { pos = osp::vec3f(x, y, z); center = pos + dir; dist = length(dir); modified = true; }
+	void setDir(float x, float y, float z) { dir = osp::vec3f(x, y, z); center = pos + dir; dist = length(dir); modified = true; }
+	void setUp(float x, float y, float z)  { up  = osp::vec3f(x, y, z); modified = true; }
 
 #define PI 3.1415926
 
 	void setPhi(int iphi)
 	{
 		phi = 0.99 * PI * (iphi/180.0);
-		float xy = cos(phi);
-		osp::vec3f xyz(xy*cos(theta), xy*sin(theta), sin(phi));
-		pos = center + dist * xyz;
-		dir = -dist * xyz;
-		modified = true;
+		setPhiTheta(theta, phi);
 	}
 
 	void setTheta(int itheta)
 	{
 		theta = PI * 2 * (itheta/360.0);
-		float xy = cos(phi);
-		osp::vec3f xyz(xy*cos(theta), xy*sin(theta), sin(phi));
-		pos = center + dist * xyz;
-		dir = -dist * xyz;
-		modified = true;
-	}
-
-	void setPhiTheta(int iphi, int itheta)
-	{
-		setPhi(iphi);
-		setTheta(itheta);
+		setPhiTheta(theta, phi);
 	}
 
 	float			 getFovY() 	{return fovY;  } void setFovY(float f)		  { fovY   = f; modified = true;}
@@ -111,8 +101,8 @@ public:
 		in >> cmd >> fovY;
 
 		center = pos + dir;
-
 		dist   = length(dir);
+
 		modified = true;
 		commit();
 	}
@@ -135,6 +125,25 @@ public:
 
 	void rotateCenter(float t, float p)
 	{
+		osp::affine3f xfm = osp::affine3f::rotate(osp::vec3f(1.0, 0.0, 0.0), p);
+    frame = frame * xfm;
+
+		xfm = osp::affine3f::rotate(osp::vec3f(0.0, 1.0, 0.0), -t);
+    frame = frame * xfm;
+
+    pos   = center + dist*xfmPoint(frame, osp::vec3f(0.0, 0.0, -1.0));
+
+    dir   = center - pos;
+		up 		= frame.l.vy;
+
+    snapUp();
+		modified = true;
+	}
+
+	void setPhiTheta(float t, float p)
+	{
+    frame = osp::affine3f(embree::one);
+
 		osp::affine3f xfm = osp::affine3f::rotate(osp::vec3f(1.0, 0.0, 0.0), p);
     frame = frame * xfm;
 

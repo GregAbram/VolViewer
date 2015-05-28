@@ -7,10 +7,11 @@ class MyVolume
 public:
 		MyVolume(bool s) :
 				shared(s), nIso(0), isoValues(NULL),
-				voxels(NULL), mod(true), ospv(NULL), 
+				voxels(NULL), mod(true), 
 				type("none"), x(-1)
 	  {
 			ospv = s ? ospNewVolume("shared_structured_volume") : ospNewVolume("block_bricked_volume");
+			SetTransferFunction(ospNewTransferFunction("piecewise_linear"));
 		};
 
 		~MyVolume()

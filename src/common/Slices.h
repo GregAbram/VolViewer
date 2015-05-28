@@ -6,6 +6,8 @@
 #include <fstream>
 #include <ospray/ospray.h>
 
+#include "MyVolume.h"
+
 using namespace std;
 
 class Slices {
@@ -16,7 +18,6 @@ public:
 		for (int i = 0; i < 3; i++)
 		{
 			values[i] = 0.0;
-			onoffs[i] = false;
 			flips[i]  = false;
 			clips[i]  = false;
 		}
@@ -29,9 +30,6 @@ public:
 	void  SetClip(int i, bool b)   { clips[i] = b; }
 	bool  GetClip(int i)   { return clips[i]; }
 
-	void  SetOnOff(int i, bool b)   { onoffs[i] = b; }
-	bool  GetOnOff(int i)   { return onoffs[i]; }
-
 	void  SetFlip(int i, bool b)   { flips[i] = b; }
 	bool  GetFlip(int i)   { return flips[i]; }
 
@@ -41,42 +39,46 @@ public:
 	void loadState(std::istream& in)
 	{
 		for (int i = 0; i < 3; i++)
-			in >> values[i] >> onoffs[i] >> flips[i] >> visibility[i];
+			in >> values[i] >> flips[i] >> visibility[i];
 	}
 
   void saveState(std::ostream& out)
 	{
 		for (int i = 0; i < 3; i++)
-			out << values[i] << " " << onoffs[i] << " " << flips[i] << " " << visibility[i] << "\n";
+			out << values[i] << " " << " " << flips[i] << " " << visibility[i] << "\n";
 	}
 
  
-	void commit(OSPRenderer& renderer)
+	void commit(OSPRenderer& renderer, MyVolume *volume)
 	{
 		float planes[12];
 		int   visible[3];
 		int   clip[3];
 
+		int xyz[3];
+		volume->GetDimensions(xyz[0], xyz[1], xyz[2]);
+
 		int k = 0;
 		for (int i = 0; i < 3; i++)
-			if (onoffs[i])
+			if (clips[i] || visibility[i])
 			{
 				if (flips[i])
 				{
 					planes[(k*4)+0] = (i == 0) ? -1.0 : 0.0;
 					planes[(k*4)+1] = (i == 1) ? -1.0 : 0.0;
 					planes[(k*4)+2] = (i == 2) ? -1.0 : 0.0;
-					planes[(k*4)+3] = 512*values[i];
+					planes[(k*4)+3] = xyz[i]*values[i];
 				}
 				else
 				{
 					planes[(k*4)+0] = (i == 0) ? 1.0 : 0.0;
 					planes[(k*4)+1] = (i == 1) ? 1.0 : 0.0;
 					planes[(k*4)+2] = (i == 2) ? 1.0 : 0.0;
-					planes[(k*4)+3] = -512*values[i];
+					planes[(k*4)+3] = -xyz[i]*values[i];
 				}
 				visible[k] = visibility[i];
 				clip[k] = clips[i];
+				// std::cerr << "Slice vis: " << visible[k] << " clip: " << clip[k] << " val: " << planes[3] << "\n";
 				k++;
 			}
 

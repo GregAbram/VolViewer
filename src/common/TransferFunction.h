@@ -40,15 +40,6 @@ public:
 
 	void loadState(std::istream& in)
 	{
-#if 0
-		in >> minv;
-		in >> maxv;
-#else
-		float crap;
-		in >> crap;
-		in >> crap;
-#endif
-
 		in >> scale;
 
 		alphas.clear();
@@ -65,8 +56,6 @@ public:
 
   void saveState(std::ostream& out)
 	{
-		out << minv << "\n";
-		out << maxv << "\n";
 		out << scale << "\n";
 		out << alphas.size() << "\n";
 		for (int i = 0; i < alphas.size(); i++)

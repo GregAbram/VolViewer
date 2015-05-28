@@ -57,6 +57,7 @@ public:
 				v[k++]= min + values[i]*(max - min);
 			}
 
+		std::cerr << "max: " << max << " " << " min: " << min << " k: " << k << " value: " << v << "\n";
 		vol->SetIsovalues(k, v);
   }
 

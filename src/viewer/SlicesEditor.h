@@ -1,5 +1,6 @@
 #include <ospray/ospray.h>
 #include <QtGui>
+#include "MyVolume.h"
 #include "Slices.h"
 
 class SlicesEditor : public QWidget {
@@ -10,7 +11,7 @@ public:
 	SlicesEditor();
 	Slices& getSlices() { return slices; }
 
-	void commit(OSPRenderer r);
+	void commit(OSPRenderer r, MyVolume *v);
 	void update();
 
 signals:

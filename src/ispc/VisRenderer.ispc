@@ -20,6 +20,9 @@
 
 #include "ospray/volume/SharedStructuredVolume.ih"
 
+void VisRenderer_renderSample(Renderer *uniform pointer, varying ScreenSample &sample, 
+				varying int &n_continuation_rays, varying ScreenSample *continuation_rays);
+
 void VisRenderer_renderFramePostamble(Renderer *uniform renderer, const uniform int32 accumID)
 { 
   if (renderer->fb) renderer->fb->accumID = accumID;  renderer->fb = NULL; 
@@ -30,94 +33,56 @@ void VisRenderer_renderFramePreamble(Renderer *uniform renderer, FrameBuffer *un
   renderer->fb = framebuffer; 
 }
 
+inline void addRGBAZ(uniform Tile &tile, const varying uint32 i, 
+											 const varying vec3f rgb,
+                     const varying float alpha,
+                     const varying float z)
+{
+  tile.r[i] += rgb.x;
+  tile.g[i] += rgb.y;
+  tile.b[i] += rgb.z;
+  tile.a[i] += alpha;
+  tile.z[i] += z;
+}
+
 void VisRenderer_renderTile(uniform Renderer *uniform self, uniform Tile &tile)
 {
   uniform FrameBuffer *uniform fb     = self->fb;
   uniform Camera      *uniform camera = self->camera;
-
-	print(".");
 
   float pixel_du = .5f, pixel_dv = .5f;
   float lens_du = 0.f,  lens_dv = 0.f;
   uniform int32 spp = self->spp;
 
   precomputeZOrder();
-
-  if (spp > 1) {
-    int startSampleID = max(fb->accumID,0)*spp;
-    
-    ScreenSample screenSample;
-    screenSample.z = inf;
-    screenSample.alpha = 0.f;
   
-    CameraSample cameraSample;
+	ScreenSample screenSample;
+	screenSample.sampleID.z = fb->accumID;
+	screenSample.z = inf;
+	screenSample.alpha = 0.f;
 
-    const float spp_inv = 1.f / spp;
-  
-    for (uint32 i=0;i<TILE_SIZE*TILE_SIZE;i+=programCount) {
-      const uint32 index = i + programIndex;
-      screenSample.sampleID.x        = tile.region.lower.x + z_order.xs[index];
-      screenSample.sampleID.y        = tile.region.lower.y + z_order.ys[index];
+	CameraSample cameraSample;
 
-      if ((screenSample.sampleID.x >= fb->size.x) | 
-          (screenSample.sampleID.y >= fb->size.y)) 
-        continue;
+	for (uint32 i=programIndex;i<TILE_SIZE*TILE_SIZE;i+=programCount) {
 
-      vec3f col = make_vec3f(0.f);
-      const uint32 pixel = z_order.xs[index] + (z_order.ys[index] * TILE_SIZE);
-      for (uniform uint32 s = 0; s<spp; s++) {
-        pixel_du = precomputedHalton2(startSampleID+s);
-        pixel_dv = precomputedHalton3(startSampleID+s);
-        screenSample.sampleID.z = startSampleID+s;
-        
-        cameraSample.screen.x = (screenSample.sampleID.x + pixel_du) * fb->rcpSize.x;
-        cameraSample.screen.y = (screenSample.sampleID.y + pixel_dv) * fb->rcpSize.y;
-      
-        camera->initRay(camera,screenSample.ray,cameraSample);
-        self->renderSample(self,screenSample);
-        col = col + screenSample.rgb;
-      }
-      col = col * (spp_inv);
-      setRGBAZ(tile,pixel,col,screenSample.alpha,screenSample.z);
-    }
-  } else {
-    if (fb->accumID >= 0) {
-      // compute 
-      pixel_du = precomputedHalton2(fb->accumID);
-      pixel_dv = precomputedHalton3(fb->accumID);
-    }
-    
-    ScreenSample screenSample;
-    screenSample.sampleID.z = fb->accumID;
-    screenSample.z = inf;
-    screenSample.alpha = 0.f;
+		const uint32 pixel = z_order.xs[i] + (z_order.ys[i] * TILE_SIZE);
+		assert(pixel < TILE_SIZE*TILE_SIZE);
 
-    CameraSample cameraSample;
+		screenSample.sampleID.x        = tile.region.lower.x + z_order.xs[i];
+		screenSample.sampleID.y        = tile.region.lower.y + z_order.ys[i];
 
-    const uniform int blocks = fb->accumID > 0 || spp > 0 ? 1 : min(1 << -2 * spp, TILE_SIZE*TILE_SIZE);
+		if ((screenSample.sampleID.x >= fb->size.x) | (screenSample.sampleID.y >= fb->size.y)) 
+			continue;
 
-    for (uint32 i=programIndex;i<TILE_SIZE*TILE_SIZE/blocks;i+=programCount) {
-      screenSample.sampleID.x        = tile.region.lower.x + z_order.xs[i*blocks];
-      screenSample.sampleID.y        = tile.region.lower.y + z_order.ys[i*blocks];
-      if ((screenSample.sampleID.x >= fb->size.x) | 
-          (screenSample.sampleID.y >= fb->size.y)) {
-        continue;
-      }
+		cameraSample.screen.x = (screenSample.sampleID.x + pixel_du) * fb->rcpSize.x;
+		cameraSample.screen.y = (screenSample.sampleID.y + pixel_dv) * fb->rcpSize.y;
 
-      cameraSample.screen.x = (screenSample.sampleID.x + pixel_du) * fb->rcpSize.x;
-      cameraSample.screen.y = (screenSample.sampleID.y + pixel_dv) * fb->rcpSize.y;
+		camera->initRay(camera, screenSample.ray, cameraSample);
 
-      camera->initRay(camera,screenSample.ray,cameraSample);
-      self->renderSample(self,screenSample);
+		varying ScreenSample continuation_rays[32]; varying int n_continuation_rays;
+		VisRenderer_renderSample(self, screenSample, n_continuation_rays, continuation_rays);
 
-      // print("pixel % % %\n",screenSample.rgb.x,screenSample.rgb.y,screenSample.rgb.z);
-
-      for (uniform int p = 0; p < blocks; p++) {
-        const uint32 pixel = z_order.xs[i*blocks+p] + (z_order.ys[i*blocks+p] * TILE_SIZE);
-        assert(pixel < TILE_SIZE*TILE_SIZE);
-        setRGBAZ(tile,pixel,screenSample.rgb,screenSample.alpha,screenSample.z);
-      }
-    }
+		setRGBAZ(tile,pixel,screenSample.rgb,screenSample.alpha,screenSample.z);
   }
 }
 
@@ -486,7 +451,9 @@ inline void VisRenderer_intersectBox(const uniform box3f &box,
 inline void VisRenderer_intersect(uniform VisRenderer *uniform renderer,
                                             varying Ray &ray,
                                             const varying float &rayOffset,
-                                            varying vec4f &color)
+                                            varying vec4f &color,
+																						varying int &n_continuation_rays, 
+																						varying ScreenSample *continuation_rays)
 {
 	// Assume no more than 32(?) slices
 	varying int slicesHit[32];
@@ -535,18 +502,6 @@ inline void VisRenderer_intersect(uniform VisRenderer *uniform renderer,
   //! Copy of the ray for slice intersection.
   Ray sliceRay = isosurfaceRay;
   sliceRay.t = ray.t0;
-
-#if 0
-  //! Clipping box for volume rendering (does not apply to isosurfaces, geometry).
-  const uniform box3f volumeClippingBox = renderer->model->volumes[0]->volumeClippingBox;
-
-  //! Compute the intersection interval over the ray and clipping box bounds.
-  if(ne(volumeClippingBox.lower, volumeClippingBox.upper)) {
-    ray.t = tMax;
-    VisRenderer_intersectBox(volumeClippingBox, ray);
-    ray.t = ray.t0 + rayOffset * step;
-  }
-#endif
 
   //! Separate color contributions for the volume, isosurfaces, and geometries. 
 	// Initialize to provided color in case of no contribution...
@@ -625,8 +580,8 @@ inline void VisRenderer_intersect(uniform VisRenderer *uniform renderer,
   }
 }
 
-void VisRenderer_renderSample(Renderer *uniform pointer, 
-                                        varying ScreenSample &sample) 
+void VisRenderer_renderSample(Renderer *uniform pointer, varying ScreenSample &sample, 
+												varying int &n_continuation_rays, varying ScreenSample *continuation_rays)
 {
   //! Cast to the actual Renderer subtype.
   VisRenderer *uniform renderer = (VisRenderer *uniform) pointer;
@@ -645,7 +600,7 @@ void VisRenderer_renderSample(Renderer *uniform pointer,
 
   //! Provide the renderer to the intersector as it contains all volumes, geometries, etc.
   vec4f color = make_vec4f(0.0f);
-  VisRenderer_intersect(renderer, sample.ray, rayOffset, color);
+  VisRenderer_intersect(renderer, sample.ray, rayOffset, color, n_continuation_rays, continuation_rays);
 
   //! Gamma correction.
   color = renderer->model->volumes[0]->gammaCorrection.x * pow(color, renderer->model->volumes[0]->gammaCorrection.y);
@@ -655,34 +610,6 @@ void VisRenderer_renderSample(Renderer *uniform pointer,
 
   //! Store the result in the sample.
   sample.rgb.x = color.x;  sample.rgb.y = color.y;  sample.rgb.z = color.z;  sample.alpha = color.w;
-}
-
-export void *uniform VisRenderer_createInstance()
-{
-  //! The renderer object.
-  VisRenderer *uniform renderer = uniform new uniform VisRenderer;
-
-  renderer->slicenorms = NULL;
-  renderer->sliceds = NULL;
-  renderer->sliceVisibility = NULL;
-  renderer->sliceClips = NULL;
-  renderer->sliceCount = 0;
-
-  //! Constructor of the parent class.
-  Renderer_Constructor(&renderer->inherited, NULL);
-
-  //! Function to compute the color and opacity for a screen space sample.
-  renderer->inherited.renderSample = VisRenderer_renderSample;
-
-  //! Function to perform per-frame state initialization.
-  renderer->inherited.beginFrame = VisRenderer_renderFramePreamble;
-
-  //! Function to perform per-frame state completion.
-  renderer->inherited.endFrame = VisRenderer_renderFramePostamble;  
-
-	renderer->inherited.renderTile = VisRenderer_renderTile;
-
-	return(renderer);
 }
 
 export void VisRenderer_setCamera(void *uniform pointer, 
@@ -756,5 +683,30 @@ export void VisRenderer_setSlices(void *uniform pointer,
     visRenderer->sliceClips = NULL;
     visRenderer->sliceVisibility = NULL;
   }
+}
+
+export void *uniform VisRenderer_createInstance()
+{
+  //! The renderer object.
+  VisRenderer *uniform renderer = uniform new uniform VisRenderer;
+
+  renderer->slicenorms = NULL;
+  renderer->sliceds = NULL;
+  renderer->sliceVisibility = NULL;
+  renderer->sliceClips = NULL;
+  renderer->sliceCount = 0;
+
+  //! Constructor of the parent class.
+  Renderer_Constructor(&renderer->inherited, NULL);
+
+  //! Function to perform per-frame state initialization.
+  renderer->inherited.beginFrame = VisRenderer_renderFramePreamble;
+
+  //! Function to perform per-frame state completion.
+  renderer->inherited.endFrame = VisRenderer_renderFramePostamble;  
+
+	renderer->inherited.renderTile = VisRenderer_renderTile;
+
+	return(renderer);
 }
 
