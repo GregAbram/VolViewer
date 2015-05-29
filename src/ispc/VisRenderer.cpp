@@ -79,8 +79,6 @@ namespace ospray {
     //! The light array is a NULL terminated list of pointers.
     void **lights = new void *[lightCount + 1];
 
-    fprintf(stderr, "XXXXXXXXX %d\n", lightCount);
-
     //! Copy pointers to the ISPC Light objects.
     for (size_t i=0 ; i < lightCount ; i++) lights[i] = ((Light **) buffer->data)[i]->getIE();
 
