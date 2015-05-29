@@ -45,7 +45,7 @@ inline void addRGBAZ(uniform Tile &tile, const varying uint32 i,
   tile.z[i] += z;
 }
 
-vec3f VisRenderer_computeTotalLambertialIntensity(VisRenderer *uniform renderer, vec3f point, vec3f normal)
+vec3f VisRenderer_computeTotalLambertianIntensity(VisRenderer *uniform renderer, vec3f point, vec3f normal)
 {
 	vec3f lightDirection;
 	float lightDistance;
@@ -236,7 +236,7 @@ inline void VisRenderer_computeSliceSample(VisRenderer *uniform renderer,
 			const vec3f sampleColor = volume->transferFunction->getColorForValue(volume->transferFunction, sample);
 			const float opacity = volume->transferFunction->getOpacityForValue(volume->transferFunction, sample);
 
-			vec3f totalRadiance = VisRenderer_computeTotalLambertialIntensity(renderer, hit, renderer->slicenorms[sliceHit]);
+			vec3f totalRadiance = VisRenderer_computeTotalLambertianIntensity(renderer, hit, renderer->slicenorms[sliceHit]);
 			
 			const float ambient = 0.1f;
 			const vec3f litColor = sampleColor * (ambient + ((1.f - ambient)* totalRadiance));
@@ -269,7 +269,7 @@ inline void VisRenderer_computeVolumeSample(VisRenderer *uniform renderer,
 
     //! Use volume gradient as the normal.
     const vec3f gradient = normalize(volume->computeGradient(volume, coordinates));
-		vec3f totalRadiance = VisRenderer_computeTotalLambertialIntensity(renderer, coordinates, gradient);
+		vec3f totalRadiance = VisRenderer_computeTotalLambertianIntensity(renderer, coordinates, gradient);
 			
     const float ambient = 0.1f;
 		sampleColor = sampleColor * (ambient + ((1.f - ambient)* totalRadiance));
@@ -341,7 +341,7 @@ inline void VisRenderer_computeIsosurfaceSample(VisRenderer *uniform renderer,
 			//! Use volume gradient as the normal.
 			const vec3f gradient = normalize(volume->computeGradient(volume, coordinates));
 
-			vec3f totalRadiance = VisRenderer_computeTotalLambertialIntensity(renderer, coordinates, gradient);
+			vec3f totalRadiance = VisRenderer_computeTotalLambertianIntensity(renderer, coordinates, gradient);
 
       const float ambient = 0.1f;
       sampleColor = sampleColor * (ambient + ((1.f-ambient) * totalRadiance));
