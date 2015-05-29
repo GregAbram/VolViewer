@@ -1,0 +1,224 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+\margl1440\margr1440\vieww22740\viewh17320\viewkind0
+\deftab720
+\pard\pardeftab720
+
+\f0\fs24 \cf0 With apologies, the build process here is pretty crude.  In particular, I haven't figured out how to use cmake with ISPC, so the directories that build ISPC stuff get built using a Makefile, which you'll have to edit to point to appropriate places for OSPRay and ISPC.   
+\b NOTE: when you build OSPRay, you will need to set OSPRAY_BUILD_ISA appropriately - on Maverick, 'avx' works.
+\b0 \
+\
+\pard\pardeftab720
+
+\b\fs36 \cf0 1. Build ispc VisRenderer
+\b0 \
+\pard\pardeftab720
+
+\fs24 \cf0 \
+This is a customization of the OSPRay RaycastVolumeRenderer to handle implicit slicing planes and multiple light sources.   Hopefully will eventually show up in OSPRay.  Note that this uses a simple Makefile and builds in place.\
+\
+cd VolumeViewer/src/ispc\
+\
+- edit the Makefile to point to the OSPRay source and ISPC compiler\
+\
+make\
+\
+Should create libvis.so\
+\
+\pard\pardeftab720
+
+\b\fs36 \cf0 2.  Build common library
+\b0 \
+\pard\pardeftab720
+
+\fs24 \cf0 \
+These are various classes to handle common functionality between the Viewer and Cinema versions.\
+\
+cd VolumeViewer/sr\
+mkdir common.obj\
+\
+Note the name of this object directory - other stuff will depend on it, so don't get creative here\
+\
+cd common.obj\
+cmake  -DOSPRAY_SRCDIR=
+\i wherever 
+\i0 ../common\
+\
+You'll need to set OSPRAY_SRCDIR to point to the OSPRay source\
+\
+make\
+\
+should create libcommon.so\
+\
+\pard\pardeftab720
+
+\b\fs36 \cf0 3.  Build the viewer
+\b0 \
+\pard\pardeftab720
+
+\fs24 \cf0 \
+This is a GUI for interactive viewing of volumes.   \
+\
+cd VolumeViewer/src\
+mkdir viewer.obj\
+\
+Note the name of this object directory - other stuff will depend on it, so don't get creative here\
+\
+cd common.obj\
+cmake  -DOSPRAY_SRCDIR=
+\i wherever -
+\i0 DOSPRAY_OBJDIR=
+\i wherever 
+\i0 ../viewer\
+\
+You'll need to set OSPRAY_SRCDIR to point to the OSPRay source and OSPRAY_OBJDIR to point to wherever you built OSPRay.   You'll need Qt for this.\
+\
+make\
+\
+should create \
+\
+\pard\pardeftab720
+
+\b\fs36 \cf0 4.  Build the Cinema library and test executable
+\b0 \
+\pard\pardeftab720
+
+\fs24 \cf0 \
+This is the library used to instrument a simulation and create Cinema databases.\
+\
+cd VolumeViewer/src\
+mkdir viewer.obj\
+\
+Note the name of this object directory - other stuff will depenjkjd on it, so don't get creative here\
+\
+cd common.obj\
+cmake  -DOSPRAY_SRCDIR=
+\i wherever -
+\i0 DOSPRAY_OBJDIR=
+\i wherever 
+\i0 ../cinema\
+\
+You'll need to set OSPRAY_SRCDIR to point to the OSPRay source and OSPRAY_OBJDIR to point to wherever you built OSPRay.  \
+\
+make\
+\
+\pard\pardeftab720
+
+\b\fs36 \cf0 5.  Build the Perlin simulation simulation.  
+\b0 \
+\pard\pardeftab720
+
+\fs24 \cf0 \
+This code evolves a 3D noise function through time to simulate a simulation.   A library - libperlin.so implements the noise function (using ISPC).  Two executables are included: 
+\b dump
+\b0 , which can be used to write a test timestep, and 
+\b sim
+\b0 , which runs through a set of time steps and uses the Cinema library to generate a Cinema database.\
+\
+cd VolumeViewer/src/perlin\
+\
+- edit the Makefile to point to the OSPRay source and ISPC compiler\
+\
+make\
+\
+\pard\pardeftab720
+
+\b\fs36 \cf0 6.  Set PATH and LD_LIBRARY_PATH environment variables
+\b0 \
+\pard\pardeftab720
+
+\fs24 \cf0 \
+you will need to do wo to run this stuff from the command line.\
+\
+cd VolViewer\
+\
+-- edit 
+\b vv.env
+\b0  to set 
+\b VOLVIEWER_ROOT 
+\b0 to point to the directory containing the VolViewer code and 
+\b OSPRAY_RELEASE
+\b0  to point tot he directory where you built  OSPRay.\
+\
+. vv.env\
+\
+Note - you'll have to twiddle this if you use anything other than bash.\
+\
+\pard\pardeftab720
+
+\b\fs36 \cf0 7.  Create test dataset
+\b0 \
+\pard\pardeftab720
+
+\fs24 \cf0 \
+In this step we will (try to) use the Perlin 
+\b dump
+\b0  program to create a test dataset\
+\
+cd VolumeViewer\
+mkdir test\
+cd test\
+dump -r 256 256 256\
+\
+This should create two files: 
+\b data.raw
+\b0  containing 256x256x256 flowting point numbers and 
+\b data.vol
+\b0  to describe it.\
+\
+\pard\pardeftab720
+
+\b\fs36 \cf0 8. View the test dataset
+\b0 \
+\pard\pardeftab720
+
+\fs24 \cf0 \
+viewer \
+File->Open\
+select 
+\b data.vol
+\b0 \
+\
+You might need to mouse-down and drag in the window to get it to show up.  Now you can use the slicing planes to clip and optionally be visible, and enable and set isovalues.  To see anything inside the volume you'll need to move the slider next to the transfer function way down.\
+\
+File->Save State\
+save as 
+\b test.state
+\b0 \
+\
+Now exit and restart:\
+\
+viewer test.state\
+\
+You'll be back to where you were.   Note that isosurfaces might not show up until you tweak the appropriate sliders.\
+\
+\pard\pardeftab720
+
+\b\fs36 \cf0 9.  Test the Cinema library
+\b0 \
+\
+\pard\pardeftab720
+
+\fs24 \cf0 For this we use 
+\b test_cinema
+\b0 , for which source is in the 
+\b cinema
+\b0  source directory.   This uses the single timestep dataset built earlier.  By default, this is generates images varying for a 3 values of phi, 3 isovalues and 12 values of theta, for 108 total images, with ancillary data files and info.json making up a Cinema database.\
+\
+test_cinema -s 512 512 test.state\
+\
+
+\b 10.  Run the simulation simulation
+\b0 \
+Now we do the same thing using the perlin noise simulation.   
+\b Note: this will not recreate or overwrite older files of the same name.
+\b0   This is a 
+\i feature
+\i0  so the thing can be restarted.\
+\
+rm *.png *.__data__ info.json\
+sim -s 512 512 -r 256 256 256 -t 0.05 20 test.stat\
+\
+I forget exactly what options are set here, but this will run through 20 time steps, creating a Cinema database.   This will generate a *lot* of frames.\
+}
