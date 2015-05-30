@@ -1,3 +1,5 @@
+#define AMBIENT 0.4f
+
 // ======================================================================== //
 // Copyright 2009-2015 Intel Corporation                                    //
 //                                                                          //
@@ -54,16 +56,26 @@ vec3f VisRenderer_computeTotalLambertianIntensity(VisRenderer *uniform renderer,
 	for (uniform int i = 0; i < renderer->numLights; i++)
 	{
 		vec3f lightRadiance = renderer->lights[i]->computeRadiance(renderer->lights[i], point, lightDirection, lightDistance);
+		// print("LX: %\n", lightDirection.x);
+		// print("LY: %\n", lightDirection.y);
+		// print("LZ: %\n", lightDirection.z);
+		// print("LR: %\n", lightRadiance.x);
+		// print("LG: %\n", lightRadiance.y);
+		// print("LB: %\n", lightRadiance.z);
 
 		float cosNL;
 		if (isnan(normal.x + normal.y + normal.z))
 			cosNL = 1.0f;
 		else
 		{
-			cosNL = dot(normalize(lightDirection), normalize(normal));			
-			if (cosNL < 0) cosNL = 0.0;
+			cosNL = -dot(normalize(lightDirection), normalize(normal));			
+			if (cosNL < 0) cosNL = -cosNL;
 		}
 		totalRadiance = totalRadiance + cosNL * lightRadiance;
+		// print("TR: %\n", totalRadiance.x);
+		// print("TG: %\n", totalRadiance.y);
+		// print("TB: %\n", totalRadiance.z);
+		// print("===============\n");
 	}
 	return totalRadiance;
 }
@@ -238,7 +250,7 @@ inline void VisRenderer_computeSliceSample(VisRenderer *uniform renderer,
 
 			vec3f totalRadiance = VisRenderer_computeTotalLambertianIntensity(renderer, hit, renderer->slicenorms[sliceHit]);
 			
-			const float ambient = 0.1f;
+			const float ambient = AMBIENT;
 			const vec3f litColor = sampleColor * (ambient + ((1.f - ambient)* totalRadiance));
 
 			color = make_vec4f(litColor.x, litColor.y, litColor.z, 1.0);
@@ -271,7 +283,7 @@ inline void VisRenderer_computeVolumeSample(VisRenderer *uniform renderer,
     const vec3f gradient = normalize(volume->computeGradient(volume, coordinates));
 		vec3f totalRadiance = VisRenderer_computeTotalLambertianIntensity(renderer, coordinates, gradient);
 			
-    const float ambient = 0.1f;
+    const float ambient = AMBIENT;
 		sampleColor = sampleColor * (ambient + ((1.f - ambient)* totalRadiance));
   }
 
@@ -343,7 +355,7 @@ inline void VisRenderer_computeIsosurfaceSample(VisRenderer *uniform renderer,
 
 			vec3f totalRadiance = VisRenderer_computeTotalLambertianIntensity(renderer, coordinates, gradient);
 
-      const float ambient = 0.1f;
+      const float ambient = AMBIENT;
       sampleColor = sampleColor * (ambient + ((1.f-ambient) * totalRadiance));
 
       //! Assume fully opaque isosurfaces for now.
@@ -421,9 +433,10 @@ inline void VisRenderer_computeGeometrySample(VisRenderer *uniform renderer,
   vec3f lightRadiance = renderer->lights[0]->computeRadiance(renderer->lights[0], dg.P, lightDirection, lightDistance);
 
   //! Constant ambient lighting term.
-  const float ambient = 0.5f;
+  const float ambient = AMBIENT;
 
-  const float cosNL = abs(dot(normalize(lightDirection), normalize(dg.Ns)));
+  float cosNL = abs(dot(normalize(lightDirection), normalize(dg.Ns)));
+	if (cosNL < 0) cosNL = -cosNL;
 
   sampleColor = sampleColor * (ambient + cosNL*(1.f-ambient)) * lightRadiance;
 

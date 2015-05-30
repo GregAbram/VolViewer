@@ -30,7 +30,7 @@ syntax(char *a)
 CameraVariable *
 cinema_setup(Renderer& renderer, Cinema& cinema)
 {
-#if 1
+#if 0
 	vector<int> phis;
 	int d = 20 / 2;
 	for (int i = 0; i < 3; i++)
@@ -39,50 +39,55 @@ cinema_setup(Renderer& renderer, Cinema& cinema)
 	vector<int> thetas;
 	d = 90 / 15;
 	for (int i = 0; i < 12; i++)
-		thetas.push_back(i*d);
+		thetas.push_back(360 - i*d);
 #else
 	vector<int> phis;
-	phis.push_back(45);
+	phis.push_back(0);
 
 	vector<int> thetas;
-	thetas.push_back(45);
+	thetas.push_back(0);
 #endif
 
 	CameraVariable *camvar = new CameraVariable(phis, thetas);
 	cinema.AddVariable(camvar);
 
-#if 0
+#if 1
 	vector<int> clips;
 	clips.push_back(0);
 
 	vector<int> visible;
-	visible.push_back(0);
 	visible.push_back(1);
 
 	vector<int> flip;
-	flip.push_back(0);
 	flip.push_back(1);
 
 	vector<int> values;
-	for (int i = 20; i < 85; i += 5)
-		values.push_back(i);
+	for (int i = 0; i < 1; i ++)
+		values.push_back(40 + i*5);
 
-	SlicePlaneVariable *clip = new SlicePlaneVariable(string("X"), clips, visible, flip, values);
+	SlicePlaneVariable *clip = new SlicePlaneVariable(string("Z"), clips, visible, flip, values);
 	cinema.AddVariable(clip);
 #endif
 
-#if 1
+#if 0
 	vector<int> isovalues;
-	for (int i = 0; i < 10; i++)
+	for (int i = 0; i < 20; i++)
 		isovalues.push_back(20 + (int)((i / 9.9) * 60));
 
 	IsosurfaceVariable *iso = new IsosurfaceVariable(string("Iso"), isovalues);
 	cinema.AddVariable(iso);
+	vector<int> isovalues;
+#else
+#if 0
+	vector<int> isovalues;
+	isovalues.push_back(50);
+	IsosurfaceVariable *iso = new IsosurfaceVariable(string("Iso"), isovalues);
+	cinema.AddVariable(iso);
+#endif
 #endif
 
 	vector<int> doVR;
 	doVR.push_back(1);
-	
 	VolumeRenderingVariable *vrvar = new VolumeRenderingVariable(doVR);
 	cinema.AddVariable(vrvar);
 
@@ -94,7 +99,7 @@ int main(int argc, char *argv[])
 {
 	Cinema cinema(&argc, (const char **)argv);
 
-  int xsz = 512, ysz = 512, zsz = 512;
+  int xsz = 256, ysz = 256, zsz = 256;
 	int width = 512, height = 512;
   float t = 3.1415926;
   float delta_t = 0.05;

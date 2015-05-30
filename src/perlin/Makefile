@@ -1,5 +1,5 @@
 OSPRAY=/work/01249/gda/maverick/git/ospray
-CINEMA=/home/01249/gda/VolViewer/src
+CINEMA=/work/01249/gda/maverick/VolViewer.test/VolViewer/src
 
 OSPRAY_INCDIRS = \
 	-I${OSPRAY} \

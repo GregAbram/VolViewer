@@ -11,7 +11,7 @@ struct Light
 					x(x),
 					y(y),
 					z(z),
-					r(x),
+					r(r),
 					g(g),
 					b(b) 
 	{}
@@ -40,7 +40,7 @@ public:
 	{
 		Light l(x, y, z, r, g, b);
 	  lights.push_back(l);
-		std::cerr << "ADD LIGHT " << x << " " << y << " " << z << "\n";
+		std::cerr << "ADD LIGHT " << x << " " << y << " " << z << " " << r << " " << g << " " << b << "\n";
 	}
 
 	void commit(OSPRenderer r)
@@ -51,6 +51,7 @@ public:
 			OSPLight l = ospNewLight(NULL, "DirectionalLight");
 			ospSet3f(l, "direction", lights[i].x, lights[i].y, lights[i].z);
 			ospSet3f(l, "color", lights[i].r, lights[i].g, lights[i].b);
+			std::cerr << "committing " << lights[i].x << " " << lights[i].y << " " << lights[i].z << " " << lights[i].r << " " << lights[i].g << " " << lights[i].b << "\n";
 			ospCommit(l);
 			ospLights.push_back(l);
 		}
