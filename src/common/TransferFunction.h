@@ -4,7 +4,10 @@
 #include <map>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <ospray/ospray.h>
+
+#include "common.h"
 
 using namespace std;
 
@@ -38,6 +41,30 @@ public:
 	void SetAlphas(vector<osp::vec2f> a) { alphas = a; }
 	vector<osp::vec2f> GetAlphas() { return alphas; }
 
+	void loadState(Document &doc)
+	{
+		if (! doc.HasMember("TransferFunction"))
+		{
+			std::cerr << "No TransferFunction state\n";
+		}
+		else
+		{
+			alphas.clear();
+
+			for (Value::ConstValueIterator itr = doc["TransferFunction"]["Opacity"].Begin(); itr != doc["TransferFunction"]["Opacity"].End(); ++itr)
+      {
+				float x, a;
+        std::stringstream ss(itr->GetString());
+				ss >> x >> a;
+				alphas.push_back(osp::vec2f(x, a));
+			}
+
+			SetScale((float)doc["TransferFunction"]["Scale"].GetDouble());
+			SetMin((float)doc["TransferFunction"]["Min"].GetDouble());
+			SetMax((float)doc["TransferFunction"]["Max"].GetDouble());
+		}
+	}
+
 	void loadState(std::istream& in)
 	{
 		in >> scale;
@@ -54,6 +81,27 @@ public:
 		}
 	}
 
+  void saveState(Document &doc)
+	{
+		Value tf(kObjectType);
+
+		Value a(kArrayType);
+
+		for (int i = 0; i < alphas.size(); i++)
+		{
+			std::stringstream ss;
+			ss << alphas[i].x << " " << alphas[i].y;
+			a.PushBack(Value().SetString(ss.str().c_str(), doc.GetAllocator()), doc.GetAllocator());
+		}
+
+		tf.AddMember("Opacity", a, doc.GetAllocator());
+		tf.AddMember("Scale", Value().SetDouble((double)GetScale()), doc.GetAllocator());
+		tf.AddMember("Min", Value().SetDouble((double)GetMin()), doc.GetAllocator());
+		tf.AddMember("Max", Value().SetDouble((double)GetMax()), doc.GetAllocator());
+
+		doc.AddMember("TransferFunction", tf, doc.GetAllocator());
+	}
+
   void saveState(std::ostream& out)
 	{
 		out << scale << "\n";
@@ -61,7 +109,6 @@ public:
 		for (int i = 0; i < alphas.size(); i++)
 			out << alphas[i].x << " " << alphas[i].y << "\n";
 	}
-	int foo;
 
 	void commit(OSPRenderer& r)
 	{

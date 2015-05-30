@@ -1,7 +1,10 @@
 #include <ospray/ospray.h>
 #include <QtGui>
 #include "Isos.h"
+#include "../common/common.h"
 #include "MyVolume.h"
+
+#include <math.h>
 
 class IsosEditor : public QWidget {
 
@@ -24,9 +27,13 @@ public slots:
 
 public:
 	void loadState(std::istream&);
+	void loadState(Document &);
   void saveState(std::ostream&);
+  void saveState(Document &);
 
 private:
+	void setup();
+
 	bool 	active;
 	Isos isos;
 

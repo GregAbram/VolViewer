@@ -4,7 +4,10 @@
 #include <map>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <ospray/ospray.h>
+
+#include "common.h"
 
 #include "MyVolume.h"
 
@@ -36,10 +39,43 @@ public:
 	void  SetVisible(int i, bool b)   { visibility[i] = b; }
 	bool  GetVisible(int i)   { return visibility[i]; }
 
+	void loadState(Document &doc)
+	{
+		if (! doc.HasMember("Slices"))
+		{
+			std::cerr << "No slices state\n";
+		}
+		else
+		{
+			Value a(kArrayType);
+			int i = 0;
+      for (Value::ConstValueIterator itr = doc["Slices"].Begin(); itr != doc["Slices"].End(); ++itr)
+      {
+        std::stringstream ss(itr->GetString());
+				ss >> values[i] >> flips[i] >> visibility[i];
+				i++;
+			};
+		}
+	}
+
 	void loadState(std::istream& in)
 	{
 		for (int i = 0; i < 3; i++)
 			in >> values[i] >> flips[i] >> visibility[i];
+	}
+
+  void saveState(Document &doc)
+	{
+		Value a(kArrayType);
+
+		for (int i = 0; i < 3; i++)
+		{
+			std::stringstream ss;
+			ss << values[i] << " " << " " << flips[i] << " " << visibility[i];
+			a.PushBack(Value().SetString(ss.str().c_str(), doc.GetAllocator()), doc.GetAllocator());
+		}
+
+		doc.AddMember("Slices", a, doc.GetAllocator());
 	}
 
   void saveState(std::ostream& out)

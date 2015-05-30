@@ -37,8 +37,25 @@ void
 IsosEditor::loadState(std::istream& in)
 {
 	active = false;
-
 	isos.loadState(in);
+	setup();
+	active = true;
+	isoModified();
+}
+
+void 
+IsosEditor::loadState(Document &doc)
+{
+	active = false;
+	isos.loadState(doc);
+	setup();
+	active = true;
+	isoModified();
+}
+
+void 
+IsosEditor::setup()
+{
 	for (int i = 0; i < 3; i++)
 	{
 		float v = isos.GetValue(i);
@@ -50,13 +67,16 @@ IsosEditor::loadState(std::istream& in)
 		else
 			onoffs[i]->setCheckState(Qt::Unchecked);
 	}
-
-	active = true;
-	isoModified();
 }
 
 void 
 IsosEditor::saveState(std::ostream& out)
+{
+	isos.saveState(out);
+}
+
+void 
+IsosEditor::saveState(Document& out)
 {
 	isos.saveState(out);
 }

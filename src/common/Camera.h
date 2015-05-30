@@ -1,9 +1,14 @@
 #pragma once
+
 #include <ospray/ospray.h>
 #include <iostream>
 #include <fstream>
+#include <sstream>
+
+#include "common.h"
 
 #include <math.h>
+
 
 class Camera
 {
@@ -51,7 +56,7 @@ public:
 	void getDir(float* d) 
 	{
 		  osp::vec3f t;
-			getPos(t);
+			getDir(t);
 			d[0] = t.x;
 			d[1] = t.y;
 			d[2] = t.z;
@@ -137,6 +142,42 @@ public:
 		out << "fovy " << fovY << "\n";
 	}
 
+	void saveState(Document &doc)
+	{
+		Value cam(kObjectType), s(kObjectType);
+
+		doc.AddMember("Camera", cam, doc.GetAllocator());
+
+		float v[3];
+
+		getPos(v);
+		std::stringstream  p;
+		p << v[0] << " " << v[1] << " " << v[2];
+		s.SetString(p.str().c_str(), doc.GetAllocator());
+		doc["Camera"].AddMember("viewpoint", s, doc.GetAllocator());
+	
+		getDir(v);
+		std::stringstream  d;
+		d << v[0] << " " << v[1] << " " << v[2];
+		s.SetString(d.str().c_str(), doc.GetAllocator());
+		doc["Camera"].AddMember("viewdir", s, doc.GetAllocator());
+
+		std::stringstream  u;
+		u << up[0] << " " << up[1] << " " << up[2];
+		s.SetString(u.str().c_str(), doc.GetAllocator());
+		doc["Camera"].AddMember("viewup", s, doc.GetAllocator());
+	
+		std::stringstream  a;
+		a << aspect;
+		s.SetString(a.str().c_str(), doc.GetAllocator());
+		doc["Camera"].AddMember("aspect", s, doc.GetAllocator());
+	
+		std::stringstream  f;
+		f << fovY;
+		s.SetString(f.str().c_str(), doc.GetAllocator());
+		doc["Camera"].AddMember("fovy", s, doc.GetAllocator());
+	}
+
 	void loadState(std::istream& in)
 	{
 		std::string cmd;
@@ -156,14 +197,49 @@ public:
 		commit();
 	}
 
+	void loadState(Document &doc)
+	{
+		if (! doc.HasMember("Camera"))
+		{
+			std::cerr << "No camera state\n";
+		}
+		else
+		{
+			float v[3];
+
+			std::stringstream p;
+			p.str(doc["Camera"]["viewpoint"].GetString());
+			p >> v[0] >> v[1] >> v[2];
+			setPos(v);
+
+			std::stringstream d;
+			d.str(doc["Camera"]["viewdir"].GetString());
+			d >> v[0] >> v[1] >> v[2];
+			setDir(v);
+
+			std::stringstream u;
+			u.str(doc["Camera"]["viewup"].GetString());
+			u >> up[0] >> up[1] >> up[2];
+
+			std::stringstream a;
+			a.str(doc["Camera"]["aspect"].GetString());
+			a >> aspect;
+
+			std::stringstream f;
+			f.str(doc["Camera"]["fovy"].GetString());
+			f >> fovY;
+
+			modified = true;
+			commit();
+		}
+	}
+
 	void commit()
 	{
 		if (modified)
 		{
 
 			osp::vec3f e = getPos(), d = getDir();
-
-			fprintf(stderr, "pos %f %f %f dir %f %f %f\n", e.x, e.y, e.z, d.x, d.y, d.z);
 
 			ospSetVec3f(ospCamera,"pos", e);
 			ospSetVec3f(ospCamera,"dir", d);
@@ -182,7 +258,6 @@ public:
 
     snapUp();
 		modified = true;
-		fprintf(stderr, "rotateCenter: phi %f theta %f pos %f %f %f dir %f %f %f\n", t, p, pos.x, pos.y, pos.z, dir.x, dir.y, dir.z);
 	}
 
 	void setPhiTheta(float t, float p)
@@ -192,7 +267,6 @@ public:
 
     snapUp();
 		modified = true;
-		fprintf(stderr, "setPhiTheta: phi %f theta %f pos %f %f %f dir %f %f %f\n", t, p, pos.x, pos.y, pos.z, dir.x, dir.y, dir.z);
 	}
 
 	void zoom(float dy)

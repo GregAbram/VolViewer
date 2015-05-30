@@ -22,6 +22,8 @@
 #include <iostream>
 #include <fstream>
 
+#include "../common/common.h"
+
 #include "Camera.h"
 
 class QOSPRayWindow : public QGLWidget
@@ -32,7 +34,9 @@ public:
   virtual ~QOSPRayWindow();
 
 	void saveState(std::ostream&);
+	void saveState(Document&);
 	void loadState(std::istream&);
+	void loadState(Document&);
 
   void setRenderingEnabled(bool renderingEnabled);
   void setRotationRate(float rotationRate);

@@ -3,6 +3,8 @@
 #include "MyVolume.h"
 #include "Slices.h"
 
+#include "../common/common.h"
+
 class SlicesEditor : public QWidget {
 
 	Q_OBJECT
@@ -24,9 +26,12 @@ public slots:
 
 public:
 	void loadState(std::istream&);
+	void loadState(Document&);
   void saveState(std::ostream&);
+  void saveState(Document&);
 
 private:
+	void  setup();
 	bool 	active;
 	Slices slices;
 

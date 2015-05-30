@@ -3,11 +3,14 @@
 #include <stdlib.h>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <exception>
 #include <dirent.h>
 #include <map>
 #include <vector>
 #include "ospray/ospray.h"
+
+#include "common.h"
 
 #include "TransferFunction.h"
 
@@ -54,6 +57,27 @@ public:
 	void saveState(std::ostream& out)
 	{
 		out << getName() << "\n";
+	}
+
+	void saveState(Document &doc)
+	{
+		Value cmap(kObjectType), fname(kObjectType);
+		doc.AddMember("Colormap", cmap, doc.GetAllocator());
+		fname.SetString(getName().c_str(), doc.GetAllocator());
+		doc["Colormap"].AddMember("filename", fname, doc.GetAllocator());
+	}
+		
+
+	void loadState(Document &doc)
+	{
+		if (! doc.HasMember("Colormap"))
+		{
+			std::cerr << "No colormap state\n";
+		}
+		else
+		{
+			loadfile(doc["Colormap"]["filename"].GetString());
+		}
 	}
 
 	void loadState(std::istream& in)

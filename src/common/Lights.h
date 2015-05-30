@@ -3,7 +3,10 @@
 #include <ospray/ospray.h>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <vector>
+
+#include "common.h"
 
 struct Light
 {
@@ -40,7 +43,6 @@ public:
 	{
 		Light l(x, y, z, r, g, b);
 	  lights.push_back(l);
-		std::cerr << "ADD LIGHT " << x << " " << y << " " << z << " " << r << " " << g << " " << b << "\n";
 	}
 
 	void commit(OSPRenderer r)
@@ -51,11 +53,30 @@ public:
 			OSPLight l = ospNewLight(NULL, "DirectionalLight");
 			ospSet3f(l, "direction", lights[i].x, lights[i].y, lights[i].z);
 			ospSet3f(l, "color", lights[i].r, lights[i].g, lights[i].b);
-			std::cerr << "committing " << lights[i].x << " " << lights[i].y << " " << lights[i].z << " " << lights[i].r << " " << lights[i].g << " " << lights[i].b << "\n";
 			ospCommit(l);
 			ospLights.push_back(l);
 		}
 		ospSetData(r, "lights", ospNewData(ospLights.size(), OSP_OBJECT, ospLights.data()));
+  }
+
+	void loadState(Document &doc)
+	{
+		lights.clear();
+
+		if (! doc.HasMember("Lights"))
+		{
+			std::cerr << "No lights state\n";
+		}
+		else
+		{
+			for (Value::ConstValueIterator itr = doc["Lights"].Begin(); itr != doc["Lights"].End(); ++itr)
+      {
+				float x, y, z, r, g, b;
+        std::stringstream ss(itr->GetString());
+				ss >> x >> y >> z >> r >> g >> b;
+				addLight(x, y, z, r, g, b);
+			}
+		}
   }
 
 	void loadState(std::istream &in)
@@ -78,6 +99,21 @@ public:
 		for (int i = 0; i < lights.size(); i++)
 			out << lights[i].x << " " << lights[i].y << " " << lights[i].z << " "  <<
 						 lights[i].r << " " << lights[i].g << " " << lights[i].b << "\n";
+	}
+
+	void saveState(Document &doc)
+	{
+		Value a(kArrayType);
+
+		for (int i = 0; i < lights.size(); i++)
+		{
+			std::stringstream s;
+			s << lights[i].x << " " << lights[i].y << " " << lights[i].z << " "  <<
+						 lights[i].r << " " << lights[i].g << " " << lights[i].b;
+			a.PushBack(Value().SetString(s.str().c_str(), doc.GetAllocator()), doc.GetAllocator());
+		}
+
+		doc.AddMember("Lights", a, doc.GetAllocator());
 	}
 
 	void clear() { lights.clear(); }

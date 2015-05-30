@@ -22,6 +22,8 @@
 
 #include <sys/resource.h>
 
+#include "../common/common.h"
+
 QOSPRayWindow::QOSPRayWindow(QMainWindow *parent, 
                              OSPRenderer renderer, 
                              bool showFrameRate) 
@@ -57,9 +59,23 @@ QOSPRayWindow::saveState(std::ostream& out)
 }
 
 void
+QOSPRayWindow::saveState(Document& out)
+{
+	camera.saveState(out);
+}
+
+void
 QOSPRayWindow::loadState(std::istream& in)
 {
 	camera.loadState(in);
+	camera.commit();
+}
+
+void
+QOSPRayWindow::loadState(Document& in)
+{
+	camera.loadState(in);
+	camera.commit();
 }
 
 void QOSPRayWindow::setRenderingEnabled(bool renderingEnabled)

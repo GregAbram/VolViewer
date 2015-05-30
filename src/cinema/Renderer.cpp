@@ -76,35 +76,48 @@ Renderer::LoadVolume(std::string volumeName)
   getCamera().commit();
 }
 
+static char xyzzy[10240];
+
 void
 Renderer::LoadState(std::string statefile, bool with_data)
 {
-	std::ifstream in;
-	in.open(statefile.c_str(), std::ifstream::in);
+  Document doc;
 
-	std::string volumeName;
-	in >> volumeName;
+  std::ifstream in;
+  in.open(statefile.c_str(), std::istream::in);
+  in.seekg(0, std::ios::end);
+  std::streamsize size = in.tellg();
+  in.seekg(0, std::ios::beg);
 
+  in.read(xyzzy, size);
+  doc.Parse(xyzzy);
+  in.close();
 
-	getCamera().loadState(in);
+	if (! doc.HasMember("Volume"))
+  {
+    std::cerr << "no volume?\n";
+    return;
+  }
+
+	getCamera().loadState(doc);
 	getCamera().commit();
 
-	getLights().loadState(in);
+	getLights().loadState(doc);
 	getLights().commit(getRenderer());
 
-	getTransferFunction().loadState(in);
-	getColorMap().loadState(in);
+	getTransferFunction().loadState(doc);
+	getColorMap().loadState(doc);
 	getColorMap().commit(getTransferFunction());
 	getTransferFunction().commit(getRenderer());
 
-	getSlices().loadState(in);
+	getSlices().loadState(doc);
 	getSlices().commit(getRenderer(), &volume);
 	
-	getIsos().loadState(in);
+	getIsos().loadState(doc);
 	getIsos().commit(&volume);
 
 	if (with_data)
-		LoadDataFromFile(volumeName);
+		LoadDataFromFile(doc["Volume"].GetString());
 	
 	in.close();
 }

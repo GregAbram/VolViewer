@@ -22,6 +22,8 @@
 #include <QtGui>
 #include <ospray/ospray.h>
 
+#include "../common/common.h"
+
 class TransferFunctionEditor : public QWidget {
 
   Q_OBJECT
@@ -43,7 +45,9 @@ signals:
 public slots:
 
   void loadState(std::istream&);
+  void loadState(Document&);
   void saveState(std::ostream&);
+  void saveState(Document&);
   void loadColorMap();
 
 protected slots:

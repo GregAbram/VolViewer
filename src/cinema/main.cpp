@@ -79,8 +79,8 @@ int main(int argc, char *argv[]) {
 		phis.push_back(i*d);
 
 	vector<int> thetas;
-	d = 90 / 15;
-	for (int i = 0; i < 12; i++)
+	d = 90 / 31;
+	for (int i = 0; i < 32; i++)
 		thetas.push_back(i*d);
 #else
 	vector<int> phis;
@@ -121,8 +121,8 @@ int main(int argc, char *argv[]) {
 #if 1
 	{
 		vector<int> isovalues;
-		for (int i = 0; i < 3; i++)
-			isovalues.push_back((int)(20 + (i / 2.0)*60));
+		for (int i = 0; i < 20; i++)
+			isovalues.push_back((int)(20 + (i / 19.0)*60));
 
 		float min, max;
 		renderer.getVolume()->GetMinMax(min, max);

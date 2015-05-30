@@ -49,6 +49,25 @@ SlicesEditor::loadState(std::istream& in)
 	active = false;
 
 	slices.loadState(in);
+	setup();
+	active = true;
+	slicesModified();
+}
+
+void 
+SlicesEditor::loadState(Document& in)
+{
+	active = false;
+
+	slices.loadState(in);
+	setup();
+	active = true;
+	slicesModified();
+}
+
+void 
+SlicesEditor::setup()
+{
 	for (int i = 0; i < 3; i++)
 	{
 		float v = slices.GetValue(i);
@@ -70,13 +89,17 @@ SlicesEditor::loadState(std::istream& in)
 		else
 			visibility[i]->setCheckState(Qt::Unchecked);
 	}
-
-	active = true;
-	slicesModified();
 }
 
 void 
 SlicesEditor::saveState(std::ostream& out)
+{
+	update();
+	slices.saveState(out);
+}
+
+void 
+SlicesEditor::saveState(Document& out)
 {
 	update();
 	slices.saveState(out);

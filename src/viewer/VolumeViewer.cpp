@@ -71,15 +71,6 @@ void VolumeViewer::importFromFile(const std::string &filename) {
 	ospCommit(dmodel);
 	ospSetObject(renderer, "dynamic_model", dmodel);
 
-	int x, y, z;
-	volume.GetDimensions(x, y, z);
-
-	int m = x > y ? x > z ? x : z : y > z ? y : z;
-
-	getWindow()->getCamera().setPos(x/2.0, y/2.0, -(3*m - z/2.0));
-	getWindow()->getCamera().setDir(0.0, 0.0, 3*m);
-	getWindow()->getCamera().commit();
-
 	ospCommit(renderer);
 
 }
@@ -99,6 +90,15 @@ VolumeViewer::openVolume()
 	getTransferFunctionEditor().getTransferFunction().SetMin(vmin);
 	getTransferFunctionEditor().getTransferFunction().SetMax(vmax);
 	getTransferFunctionEditor().commit();
+
+	int x, y, z;
+	volume.GetDimensions(x, y, z);
+
+	int m = x > y ? x > z ? x : z : y > z ? y : z;
+
+	getWindow()->getCamera().setPos(x/2.0, y/2.0, -(3*m - z/2.0));
+	getWindow()->getCamera().setDir(0.0, 0.0, 3*m);
+	getWindow()->getCamera().commit();
 
 	osprayWindow->setRenderingEnabled(true);
 	render();
@@ -122,6 +122,53 @@ void VolumeViewer::openState()
 	loadState(filename.toStdString());
 }
 
+#if 1
+static char xyzzy[10240];
+void VolumeViewer::loadState(std::string statename)
+{
+	Document doc;
+
+  std::ifstream in; 
+	in.open(statename.c_str(), std::istream::in);
+  in.seekg(0, std::ios::end);
+  std::streamsize size = in.tellg();
+  in.seekg(0, std::ios::beg);
+
+  in.read(xyzzy, size);
+  doc.Parse(xyzzy);
+	in.close();
+
+	if (! doc.HasMember("Volume"))
+	{
+    std::cerr << "no volume?\n";
+		return;
+	}
+
+	getWindow()->loadState(doc);
+	getWindow()->commit();
+
+	getLights().loadState(doc);
+	getLights().commit(renderer);
+
+	importFromFile(doc["Volume"].GetString());
+
+	getTransferFunctionEditor().loadState(doc);			// Encompases colormap and opacity
+	getSlicesEditor().loadState(doc);
+
+	getIsosEditor().loadState(doc);
+	getIsosEditor().commit(&volume);
+	volume.commit();
+
+	float vmin, vmax;
+	volume.GetMinMax(vmin, vmax);
+	getTransferFunctionEditor().getTransferFunction().SetMin(vmin);
+	getTransferFunctionEditor().getTransferFunction().SetMax(vmax);
+	getTransferFunctionEditor().commit();
+
+	osprayWindow->setRenderingEnabled(true);
+	render();
+}
+#else
 void VolumeViewer::loadState(std::string statename)
 {
   std::ifstream in; 
@@ -149,8 +196,42 @@ void VolumeViewer::loadState(std::string statename)
 	in.close();
 
 	osprayWindow->setRenderingEnabled(true);
+	render();
 }
+#endif
 
+#if 1
+void VolumeViewer::saveState()
+{
+	QString filename = QFileDialog::getSaveFileName(this, "Save state", ".", "State files (*.state)");
+	if(filename.isNull())
+		return;
+
+	//! Make sure the filename has the proper extension.
+	if(!filename.endsWith(".state"))
+		filename += ".state";
+
+	Document doc;
+	doc.Parse("{}");
+
+	doc.AddMember("Volume", Value().SetString(volumeName.c_str(), doc.GetAllocator()), doc.GetAllocator());
+
+	getWindow()->saveState(doc);
+	getLights().saveState(doc);
+	getTransferFunctionEditor().saveState(doc);
+	getSlicesEditor().saveState(doc);
+	getIsosEditor().saveState(doc);
+
+  StringBuffer sbuf;
+  PrettyWriter<StringBuffer> writer(sbuf);
+  doc.Accept(writer);
+	
+  std::ofstream out;
+	out.open(filename.toStdString().c_str(), std::ofstream::out);
+  out << sbuf.GetString() << "\n";
+	out.close();
+}
+#else
 void VolumeViewer::saveState()
 {
 	QString filename = QFileDialog::getSaveFileName(this, "Save state", ".", "State files (*.state)");
@@ -173,6 +254,7 @@ void VolumeViewer::saveState()
 	getIsosEditor().saveState(out);
 	out.close();
 }
+#endif
 
 void VolumeViewer::commitSlices()
 {
@@ -184,7 +266,6 @@ void VolumeViewer::commitSlices()
 void VolumeViewer::commitIsos()
 {
 	isosEditor.commit(&volume);
-	// ospCommit(renderer);
 	volume.commit();
 	render();
 }

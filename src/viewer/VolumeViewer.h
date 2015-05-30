@@ -27,6 +27,8 @@
 #include "IsosEditor.h"
 #include "MyVolume.h"
 
+#include "../common/common.h"
+
 class VolumeViewer : public QMainWindow {
 
   Q_OBJECT

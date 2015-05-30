@@ -4,7 +4,10 @@
 #include <map>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <ospray/ospray.h>
+
+#include "common.h"
 
 #include "MyVolume.h"
 
@@ -34,10 +37,46 @@ public:
 	void  SetOnOff(int i, bool b)   { if (i > 2) i = 2; onoffs[i] = b; }
 	bool  GetOnOff(int i)   { if (i > 2) i = 2; return onoffs[i]; }
 
+	void loadState(Document &doc)
+	{
+		if (! doc.HasMember("Isosurfaces"))
+		{
+			std::cerr << "No isosurface state\n";
+		}
+		else
+		{
+			int j, i = 0;
+			for (Value::ConstValueIterator itr = doc["Isosurfaces"].Begin(); itr != doc["Isosurfaces"].End(); ++itr)
+			{
+				std::stringstream ss(itr->GetString());
+				ss >> values[i] >> j;
+				onoffs[i] = (j == 1);
+				i++;
+				if (i > 3) break;
+			}
+			for ( ; i < 3; i++)
+				onoffs[i] = false;
+		}
+	}
+
 	void loadState(std::istream& in)
 	{
 		for (int i = 0; i < 3; i++)
 			in >> values[i] >> onoffs[i];
+	}
+
+	void saveState(Document &doc)
+	{
+		Value a(kArrayType);
+
+		for (int i = 0; i < 3; i++)
+		{
+			std::stringstream ss;
+			ss << values[i] << " " << (onoffs[i] ? 1 : 0);
+			a.PushBack(Value().SetString(ss.str().c_str(), doc.GetAllocator()), doc.GetAllocator());
+		}
+			
+		doc.AddMember("Isosurfaces", a, doc.GetAllocator());
 	}
 
   void saveState(std::ostream& out)
@@ -57,13 +96,12 @@ public:
 				v[k++]= min + values[i]*(max - min);
 			}
 
-		std::cerr << "max: " << max << " " << " min: " << min << " k: " << k << " value: " << v << "\n";
 		vol->SetIsovalues(k, v);
   }
 
 private:
 	float values[3];
-	float onoffs[3];
+	bool onoffs[3];
 
 	float min, max;
 };
