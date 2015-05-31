@@ -221,7 +221,7 @@ public:
 
 	void rotateCenter(float t, float p)
 	{
-    frame = frame * osp::affine3f::rotate(osp::vec3f(1.0, 0.0, 0.0), p) * osp::affine3f::rotate(osp::vec3f(0.0, 1.0, 0.0), -t);
+    frame = frame * osp::affine3f::rotate(osp::vec3f(0.0, 1.0, 0.0), -t) * osp::affine3f::rotate(osp::vec3f(1.0, 0.0, 0.0), p);
 		up 		= frame.l.vy;
 
     snapUp();
@@ -230,7 +230,7 @@ public:
 
 	void setPhiTheta(float t, float p)
 	{
-    frame = osp::affine3f::rotate(osp::vec3f(1.0, 0.0, 0.0), p) * osp::affine3f::rotate(osp::vec3f(0.0, 1.0, 0.0), -t);
+    frame = osp::affine3f::rotate(osp::vec3f(0.0, 1.0, 0.0), -t) * osp::affine3f::rotate(osp::vec3f(1.0, 0.0, 0.0), p);
 		up 		= frame.l.vy;
 
     snapUp();
