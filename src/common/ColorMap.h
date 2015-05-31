@@ -54,11 +54,6 @@ public:
 	vector<osp::vec3f> getColors() {return colors; }
 	string getName() { return name; }
 
-	void saveState(std::ostream& out)
-	{
-		out << getName() << "\n";
-	}
-
 	void saveState(Document &doc)
 	{
 		Value cmap(kObjectType), fname(kObjectType);
@@ -78,15 +73,6 @@ public:
 		{
 			loadfile(doc["Colormap"]["filename"].GetString());
 		}
-	}
-
-	void loadState(std::istream& in)
-	{
-		in.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-		string name;
-		in >> name;
-		loadfile(name);
-		in.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 	}
 
 	void commit(TransferFunction& t)

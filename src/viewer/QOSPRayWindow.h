@@ -33,9 +33,7 @@ public:
   QOSPRayWindow(QMainWindow *parent, OSPRenderer renderer, bool showFrameRate);
   virtual ~QOSPRayWindow();
 
-	void saveState(std::ostream&);
 	void saveState(Document&);
-	void loadState(std::istream&);
 	void loadState(Document&);
 
   void setRenderingEnabled(bool renderingEnabled);

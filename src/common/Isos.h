@@ -59,12 +59,6 @@ public:
 		}
 	}
 
-	void loadState(std::istream& in)
-	{
-		for (int i = 0; i < 3; i++)
-			in >> values[i] >> onoffs[i];
-	}
-
 	void saveState(Document &doc)
 	{
 		Value a(kArrayType);
@@ -77,12 +71,6 @@ public:
 		}
 			
 		doc.AddMember("Isosurfaces", a, doc.GetAllocator());
-	}
-
-  void saveState(std::ostream& out)
-	{
-		for (int i = 0; i < 3; i++)
-			out << values[i] << " " << onoffs[i] << "\n";
 	}
 
 	void commit(MyVolume *vol)

@@ -79,28 +79,6 @@ public:
 		}
   }
 
-	void loadState(std::istream &in)
-	{
-		lights.clear();
-
-		int n;
-		in >> n;
-		for (int i = 0; i < n; i++)
-		{
-			float x, y, z, r, g, b;
-			in >> x >> y >> z >> r >> g >> b;
-			addLight(x, y, z, r, g, b);
-		}
-	}
-
-	void saveState(std::ostream &out)
-	{
-		out << lights.size() << "\n";
-		for (int i = 0; i < lights.size(); i++)
-			out << lights[i].x << " " << lights[i].y << " " << lights[i].z << " "  <<
-						 lights[i].r << " " << lights[i].g << " " << lights[i].b << "\n";
-	}
-
 	void saveState(Document &doc)
 	{
 		Value a(kArrayType);

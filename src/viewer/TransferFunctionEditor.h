@@ -44,9 +44,7 @@ signals:
 
 public slots:
 
-  void loadState(std::istream&);
   void loadState(Document&);
-  void saveState(std::ostream&);
   void saveState(Document&);
   void loadColorMap();
 

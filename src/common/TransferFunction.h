@@ -65,22 +65,6 @@ public:
 		}
 	}
 
-	void loadState(std::istream& in)
-	{
-		in >> scale;
-
-		alphas.clear();
-
-		int n;
-		in >> n;
-		for (int i = 0; i < n; i++)
-		{
-			float x, a;
-			in >> x >> a;
-			alphas.push_back(osp::vec2f(x, a));
-		}
-	}
-
   void saveState(Document &doc)
 	{
 		Value tf(kObjectType);
@@ -100,14 +84,6 @@ public:
 		tf.AddMember("Max", Value().SetDouble((double)GetMax()), doc.GetAllocator());
 
 		doc.AddMember("TransferFunction", tf, doc.GetAllocator());
-	}
-
-  void saveState(std::ostream& out)
-	{
-		out << scale << "\n";
-		out << alphas.size() << "\n";
-		for (int i = 0; i < alphas.size(); i++)
-			out << alphas[i].x << " " << alphas[i].y << "\n";
 	}
 
 	void commit(OSPRenderer& r)

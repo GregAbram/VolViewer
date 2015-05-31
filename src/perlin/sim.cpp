@@ -30,16 +30,16 @@ syntax(char *a)
 CameraVariable *
 cinema_setup(Renderer& renderer, Cinema& cinema)
 {
-#if 0
+#if 1
 	vector<int> phis;
 	int d = 20 / 2;
 	for (int i = 0; i < 3; i++)
 		phis.push_back(i*d);
 
 	vector<int> thetas;
-	d = 90 / 15;
-	for (int i = 0; i < 12; i++)
-		thetas.push_back(360 - i*d);
+	d = 90 / 31;
+	for (int i = 0; i < 32; i++)
+		thetas.push_back(i*d);
 #else
 	vector<int> phis;
 	phis.push_back(0);
@@ -69,14 +69,13 @@ cinema_setup(Renderer& renderer, Cinema& cinema)
 	cinema.AddVariable(clip);
 #endif
 
-#if 0
+#if 1
 	vector<int> isovalues;
 	for (int i = 0; i < 20; i++)
-		isovalues.push_back(20 + (int)((i / 9.9) * 60));
+		isovalues.push_back(20 + (int)((i / 19.0) * 60));
 
 	IsosurfaceVariable *iso = new IsosurfaceVariable(string("Iso"), isovalues);
 	cinema.AddVariable(iso);
-	vector<int> isovalues;
 #else
 #if 0
 	vector<int> isovalues;
@@ -86,10 +85,12 @@ cinema_setup(Renderer& renderer, Cinema& cinema)
 #endif
 #endif
 
+#if 0
 	vector<int> doVR;
 	doVR.push_back(1);
 	VolumeRenderingVariable *vrvar = new VolumeRenderingVariable(doVR);
 	cinema.AddVariable(vrvar);
+#endif
 
 	std::cerr << "Requires " << cinema.Count() << " images\n";
 	return camvar;

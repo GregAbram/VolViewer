@@ -25,9 +25,7 @@ public slots:
 
 
 public:
-	void loadState(std::istream&);
 	void loadState(Document&);
-  void saveState(std::ostream&);
   void saveState(Document&);
 
 private:

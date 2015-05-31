@@ -122,7 +122,6 @@ void VolumeViewer::openState()
 	loadState(filename.toStdString());
 }
 
-#if 1
 static char xyzzy[10240];
 void VolumeViewer::loadState(std::string statename)
 {
@@ -168,39 +167,7 @@ void VolumeViewer::loadState(std::string statename)
 	osprayWindow->setRenderingEnabled(true);
 	render();
 }
-#else
-void VolumeViewer::loadState(std::string statename)
-{
-  std::ifstream in; 
-	in.open(statename.c_str(), std::istream::in);
 
-	in >> volumeName;
-	importFromFile(volumeName);
-	getWindow()->loadState(in);
-	getWindow()->commit();
-
-	getLights().loadState(in);
-	getLights().commit(renderer);
-	
-	getTransferFunctionEditor().loadState(in);			// Encompases colormap and opacity
-	getSlicesEditor().loadState(in);
-
-	getIsosEditor().loadState(in);
-
-	float vmin, vmax;
-	volume.GetMinMax(vmin, vmax);
-	getTransferFunctionEditor().getTransferFunction().SetMin(vmin);
-	getTransferFunctionEditor().getTransferFunction().SetMax(vmax);
-	getTransferFunctionEditor().commit();
-
-	in.close();
-
-	osprayWindow->setRenderingEnabled(true);
-	render();
-}
-#endif
-
-#if 1
 void VolumeViewer::saveState()
 {
 	QString filename = QFileDialog::getSaveFileName(this, "Save state", ".", "State files (*.state)");
@@ -231,30 +198,6 @@ void VolumeViewer::saveState()
   out << sbuf.GetString() << "\n";
 	out.close();
 }
-#else
-void VolumeViewer::saveState()
-{
-	QString filename = QFileDialog::getSaveFileName(this, "Save state", ".", "State files (*.state)");
-	if(filename.isNull())
-		return;
-
-	//! Make sure the filename has the proper extension.
-	if(!filename.endsWith(".state"))
-		filename += ".state";
-
-  std::ofstream out;
-	out.open(filename.toStdString().c_str(), std::ofstream::out);
-	out << volumeName << "\n";
-
-	getWindow()->saveState(out);
-
-	getLights().saveState(out);
-	getTransferFunctionEditor().saveState(out);
-	getSlicesEditor().saveState(out);
-	getIsosEditor().saveState(out);
-	out.close();
-}
-#endif
 
 void VolumeViewer::commitSlices()
 {

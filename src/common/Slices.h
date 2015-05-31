@@ -58,12 +58,6 @@ public:
 		}
 	}
 
-	void loadState(std::istream& in)
-	{
-		for (int i = 0; i < 3; i++)
-			in >> values[i] >> flips[i] >> visibility[i];
-	}
-
   void saveState(Document &doc)
 	{
 		Value a(kArrayType);
@@ -78,13 +72,6 @@ public:
 		doc.AddMember("Slices", a, doc.GetAllocator());
 	}
 
-  void saveState(std::ostream& out)
-	{
-		for (int i = 0; i < 3; i++)
-			out << values[i] << " " << " " << flips[i] << " " << visibility[i] << "\n";
-	}
-
- 
 	void commit(OSPRenderer& renderer, MyVolume *volume)
 	{
 		float planes[12];

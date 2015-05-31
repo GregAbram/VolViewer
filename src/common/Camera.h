@@ -129,19 +129,6 @@ public:
 		modified = true;
   }
 
-	void saveState(std::ostream& out)
-	{
-		osp::vec3f v = getPos();
-		out << "pos " << v[0] << " " << v[1] << " " << v[2] << "\n";
-
-		v = getDir();
-		out << "dir " << v[0] << " " << v[1] << " " << v[2] << "\n";
-
-		out << "up " << up[0] << " " << up[1] << " " << up[2] << "\n";
-		out << "aspect " << aspect << "\n";
-		out << "fovy " << fovY << "\n";
-	}
-
 	void saveState(Document &doc)
 	{
 		Value cam(kObjectType), s(kObjectType);
@@ -176,25 +163,6 @@ public:
 		f << fovY;
 		s.SetString(f.str().c_str(), doc.GetAllocator());
 		doc["Camera"].AddMember("fovy", s, doc.GetAllocator());
-	}
-
-	void loadState(std::istream& in)
-	{
-		std::string cmd;
-		float v[3];
-
-		in >> cmd >> v[0] >> v[1] >> v[2];
-		setPos(v);
-
-		in >> cmd >> v[0] >> v[1] >> v[2];
-		setDir(v);
-
-		in >> cmd >> up[0] >> up[1] >> up[2];
-		in >> cmd >> aspect;
-		in >> cmd >> fovY;
-
-		modified = true;
-		commit();
 	}
 
 	void loadState(Document &doc)

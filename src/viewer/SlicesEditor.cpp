@@ -44,17 +44,6 @@ SlicesEditor::SlicesEditor()
 }
 
 void 
-SlicesEditor::loadState(std::istream& in)
-{
-	active = false;
-
-	slices.loadState(in);
-	setup();
-	active = true;
-	slicesModified();
-}
-
-void 
 SlicesEditor::loadState(Document& in)
 {
 	active = false;
@@ -89,13 +78,6 @@ SlicesEditor::setup()
 		else
 			visibility[i]->setCheckState(Qt::Unchecked);
 	}
-}
-
-void 
-SlicesEditor::saveState(std::ostream& out)
-{
-	update();
-	slices.saveState(out);
 }
 
 void 

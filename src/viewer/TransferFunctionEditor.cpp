@@ -121,34 +121,6 @@ void TransferFunctionEditor::addColorMap(VColorMap cmap)
   colorMapComboBox.setCurrentIndex(colorMaps.size()-1);
 }
 
-void TransferFunctionEditor::loadState(std::istream& in)
-{
-
-	transferFunction.loadState(in);
-
-  transferFunctionAlphaScalingSlider.setValue(int(transferFunction.GetScale() * (transferFunctionAlphaScalingSlider.minimum() + transferFunctionAlphaScalingSlider.maximum())));
-
-	QVector<QPointF> points;
-	for (int i = 0; i < transferFunction.GetAlphas().size(); i++)
-		points.push_back(QPointF(transferFunction.GetAlphas()[i].x, transferFunction.GetAlphas()[i].y));
-
-  transferFunctionAlphaWidget.setPoints(points);
-
-	ColorMap cmap;
-	cmap.loadState(in);
-
-	int colorMapIndex;
-  for(colorMapIndex = 0; colorMapIndex < colorMaps.size(); colorMapIndex++)
-		if (colorMaps[colorMapIndex].getName() == cmap.getName())
-			break;
-
-	if (colorMapIndex == colorMaps.size())
-		addColorMap(VColorMap(cmap));
-
-	colorMapComboBox.setCurrentIndex(colorMapIndex);
-
-}
-
 void TransferFunctionEditor::loadState(Document& in)
 {
 
@@ -178,12 +150,6 @@ void TransferFunctionEditor::loadState(Document& in)
 }
 
 void TransferFunctionEditor::saveState(Document& out)
-{
-	transferFunction.saveState(out);
-	colorMaps[colorMapComboBox.currentIndex()].getColorMap().saveState(out);
-}
-
-void TransferFunctionEditor::saveState(std::ostream& out)
 {
 	transferFunction.saveState(out);
 	colorMaps[colorMapComboBox.currentIndex()].getColorMap().saveState(out);

@@ -34,16 +34,6 @@ IsosEditor::IsosEditor()
 }
 
 void 
-IsosEditor::loadState(std::istream& in)
-{
-	active = false;
-	isos.loadState(in);
-	setup();
-	active = true;
-	isoModified();
-}
-
-void 
 IsosEditor::loadState(Document &doc)
 {
 	active = false;
@@ -67,12 +57,6 @@ IsosEditor::setup()
 		else
 			onoffs[i]->setCheckState(Qt::Unchecked);
 	}
-}
-
-void 
-IsosEditor::saveState(std::ostream& out)
-{
-	isos.saveState(out);
 }
 
 void 

@@ -53,22 +53,9 @@ QOSPRayWindow::~QOSPRayWindow()
 }
 
 void
-QOSPRayWindow::saveState(std::ostream& out)
-{
-	camera.saveState(out);
-}
-
-void
 QOSPRayWindow::saveState(Document& out)
 {
 	camera.saveState(out);
-}
-
-void
-QOSPRayWindow::loadState(std::istream& in)
-{
-	camera.loadState(in);
-	camera.commit();
 }
 
 void
