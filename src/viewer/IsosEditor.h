@@ -26,8 +26,8 @@ public slots:
 
 
 public:
-	void loadState(Document &);
-  void saveState(Document &);
+	void loadState(Value&);
+  void saveState(Document&, Value&);
 
 private:
 	void setup();

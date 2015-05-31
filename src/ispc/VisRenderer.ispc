@@ -56,12 +56,12 @@ vec3f VisRenderer_computeTotalLambertianIntensity(VisRenderer *uniform renderer,
 	for (uniform int i = 0; i < renderer->numLights; i++)
 	{
 		vec3f lightRadiance = renderer->lights[i]->computeRadiance(renderer->lights[i], point, lightDirection, lightDistance);
-		// print("LX: %\n", lightDirection.x);
-		// print("LY: %\n", lightDirection.y);
-		// print("LZ: %\n", lightDirection.z);
-		// print("LR: %\n", lightRadiance.x);
-		// print("LG: %\n", lightRadiance.y);
-		// print("LB: %\n", lightRadiance.z);
+		 // print("LX: %\n", lightDirection.x);
+		 // print("LY: %\n", lightDirection.y);
+		 // print("LZ: %\n", lightDirection.z);
+		 // print("LR: %\n", lightRadiance.x);
+		 // print("LG: %\n", lightRadiance.y);
+		 // print("LB: %\n", lightRadiance.z);
 
 		float cosNL;
 		if (isnan(normal.x + normal.y + normal.z))
@@ -72,10 +72,10 @@ vec3f VisRenderer_computeTotalLambertianIntensity(VisRenderer *uniform renderer,
 			if (cosNL < 0) cosNL = -cosNL;
 		}
 		totalRadiance = totalRadiance + cosNL * lightRadiance;
-		// print("TR: %\n", totalRadiance.x);
-		// print("TG: %\n", totalRadiance.y);
-		// print("TB: %\n", totalRadiance.z);
-		// print("===============\n");
+		 // print("TR: %\n", totalRadiance.x);
+		 // print("TG: %\n", totalRadiance.y);
+		 // print("TB: %\n", totalRadiance.z);
+		 // print("===============\n");
 	}
 	return totalRadiance;
 }

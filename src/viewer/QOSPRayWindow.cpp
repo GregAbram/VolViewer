@@ -43,7 +43,7 @@ QOSPRayWindow::QOSPRayWindow(QMainWindow *parent,
 	camera.setRenderer(renderer);
 	camera.setPos(osp::vec3f(255.5, 255, 255.5));
 	camera.setDir(osp::vec3f(0.0, -1700.5, 0.0));
-	camera.commit();
+	// camera.commit();
 }
 
 QOSPRayWindow::~QOSPRayWindow()
@@ -53,16 +53,16 @@ QOSPRayWindow::~QOSPRayWindow()
 }
 
 void
-QOSPRayWindow::saveState(Document& out)
+QOSPRayWindow::saveState(Document& doc, Value &section)
 {
-	camera.saveState(out);
+	camera.saveState(doc, section);
 }
 
 void
-QOSPRayWindow::loadState(Document& in)
+QOSPRayWindow::loadState(Value& in)
 {
 	camera.loadState(in);
-	camera.commit();
+	// camera.commit();
 }
 
 void QOSPRayWindow::setRenderingEnabled(bool renderingEnabled)
@@ -102,6 +102,7 @@ void QOSPRayWindow::paintGL()
     }
 
 	camera.commit();
+	ospCommit(renderer);
 
   renderFrameTimer.start();
 
@@ -161,6 +162,8 @@ void QOSPRayWindow::resizeGL(int width, int height)
 
   // update OpenGL camera and force redraw
   glViewport(0, 0, width, height);
+
+	ospCommit(renderer);
   updateGL();
 }
 

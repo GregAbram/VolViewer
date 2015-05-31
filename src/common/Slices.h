@@ -39,26 +39,18 @@ public:
 	void  SetVisible(int i, bool b)   { visibility[i] = b; }
 	bool  GetVisible(int i)   { return visibility[i]; }
 
-	void loadState(Document &doc)
+	void loadState(Value &section)
 	{
-		if (! doc.HasMember("Slices"))
+		int i = 0;
+		for (Value::ConstValueIterator itr = section.Begin(); itr != section.End(); ++itr)
 		{
-			std::cerr << "No slices state\n";
-		}
-		else
-		{
-			Value a(kArrayType);
-			int i = 0;
-      for (Value::ConstValueIterator itr = doc["Slices"].Begin(); itr != doc["Slices"].End(); ++itr)
-      {
-        std::stringstream ss(itr->GetString());
-				ss >> values[i] >> flips[i] >> visibility[i];
-				i++;
-			};
-		}
+			std::stringstream ss(itr->GetString());
+			ss >> values[i] >> flips[i] >> visibility[i];
+			i++;
+		};
 	}
 
-  void saveState(Document &doc)
+  void saveState(Document &doc, Value &section)
 	{
 		Value a(kArrayType);
 
@@ -69,7 +61,7 @@ public:
 			a.PushBack(Value().SetString(ss.str().c_str(), doc.GetAllocator()), doc.GetAllocator());
 		}
 
-		doc.AddMember("Slices", a, doc.GetAllocator());
+		section.AddMember("Slices", a, doc.GetAllocator());
 	}
 
 	void commit(OSPRenderer& renderer, MyVolume *volume)

@@ -121,7 +121,7 @@ void TransferFunctionEditor::addColorMap(VColorMap cmap)
   colorMapComboBox.setCurrentIndex(colorMaps.size()-1);
 }
 
-void TransferFunctionEditor::loadState(Document& in)
+void TransferFunctionEditor::loadState(Value& in)
 {
 
 	transferFunction.loadState(in);
@@ -134,25 +134,28 @@ void TransferFunctionEditor::loadState(Document& in)
 
   transferFunctionAlphaWidget.setPoints(points);
 
-	ColorMap cmap;
-	cmap.loadState(in);
+	if (in.HasMember("Colormap"))
+	{
+		ColorMap cmap;
+		cmap.loadState(in["Colormap"]);
 
-	int colorMapIndex;
-  for(colorMapIndex = 0; colorMapIndex < colorMaps.size(); colorMapIndex++)
-		if (colorMaps[colorMapIndex].getName() == cmap.getName())
-			break;
+		int colorMapIndex;
+		for(colorMapIndex = 0; colorMapIndex < colorMaps.size(); colorMapIndex++)
+			if (colorMaps[colorMapIndex].getName() == cmap.getName())
+				break;
 
-	if (colorMapIndex == colorMaps.size())
-		addColorMap(VColorMap(cmap));
+		if (colorMapIndex == colorMaps.size())
+			addColorMap(VColorMap(cmap));
 
-	colorMapComboBox.setCurrentIndex(colorMapIndex);
+		colorMapComboBox.setCurrentIndex(colorMapIndex);
+	}
 
 }
 
-void TransferFunctionEditor::saveState(Document& out)
+void TransferFunctionEditor::saveState(Document& doc, Value &out)
 {
-	transferFunction.saveState(out);
-	colorMaps[colorMapComboBox.currentIndex()].getColorMap().saveState(out);
+	transferFunction.saveState(doc, out);
+	colorMaps[colorMapComboBox.currentIndex()].getColorMap().saveState(doc, out["TransferFunction"]);
 }
 
 void TransferFunctionEditor::setColorMapIndex(int index)

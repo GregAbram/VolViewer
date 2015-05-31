@@ -45,6 +45,24 @@ public:
 	  lights.push_back(l);
 	}
 
+	void commit(OSPRenderer r, osp::affine3f frame)
+	{
+		std::vector<OSPLight> ospLights;
+		for (int i = 0; i < lights.size(); i++)
+		{
+			OSPLight l = ospNewLight(NULL, "DirectionalLight");
+
+			osp::vec3f d(lights[i].x, lights[i].y, lights[i].z);
+			osp::vec3f xd = xfmPoint(frame, d);
+
+			ospSet3f(l, "direction", xd.x, xd.y, xd.z);
+			ospSet3f(l, "color", lights[i].r, lights[i].g, lights[i].b);
+			ospCommit(l);
+			ospLights.push_back(l);
+		}
+		ospSetData(r, "lights", ospNewData(ospLights.size(), OSP_OBJECT, ospLights.data()));
+  }
+
 	void commit(OSPRenderer r)
 	{
 		std::vector<OSPLight> ospLights;
@@ -59,27 +77,20 @@ public:
 		ospSetData(r, "lights", ospNewData(ospLights.size(), OSP_OBJECT, ospLights.data()));
   }
 
-	void loadState(Document &doc)
+	void loadState(Value &section)
 	{
 		lights.clear();
 
-		if (! doc.HasMember("Lights"))
+		for (Value::ConstValueIterator itr = section.Begin(); itr != section.End(); ++itr)
 		{
-			std::cerr << "No lights state\n";
-		}
-		else
-		{
-			for (Value::ConstValueIterator itr = doc["Lights"].Begin(); itr != doc["Lights"].End(); ++itr)
-      {
-				float x, y, z, r, g, b;
-        std::stringstream ss(itr->GetString());
-				ss >> x >> y >> z >> r >> g >> b;
-				addLight(x, y, z, r, g, b);
-			}
+			float x, y, z, r, g, b;
+			std::stringstream ss(itr->GetString());
+			ss >> x >> y >> z >> r >> g >> b;
+			addLight(x, y, z, r, g, b);
 		}
   }
 
-	void saveState(Document &doc)
+	void saveState(Document &doc, Value &section)
 	{
 		Value a(kArrayType);
 
@@ -91,7 +102,7 @@ public:
 			a.PushBack(Value().SetString(s.str().c_str(), doc.GetAllocator()), doc.GetAllocator());
 		}
 
-		doc.AddMember("Lights", a, doc.GetAllocator());
+		section.AddMember("Lights", a, doc.GetAllocator());
 	}
 
 	void clear() { lights.clear(); }

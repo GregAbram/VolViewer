@@ -32,15 +32,15 @@ namespace ospray {
 
     //! Get the camera.
     camera = (Camera *) getParamObject("camera", NULL);  
-		exitOnCondition(camera == NULL, "no camera specified");
+		if (!camera) return;
 
     //! Get the model.
     model = (Model *) getParamObject("model", NULL);  
-		exitOnCondition(model == NULL, "no model specified");
+		if (!model) return;
 
     //! Get the dynamic model.
     dynamicModel = (Model *) getParamObject("dynamic_model", NULL);  
-		exitOnCondition(dynamicModel == NULL, "no dynamic model specified");
+		if (!model) return;
 
     //! Set the camera.
     ispc::VisRenderer_setCamera(ispcEquivalent, camera->getIE());
@@ -52,7 +52,9 @@ namespace ospray {
     ispc::VisRenderer_setDynamicModel(ispcEquivalent, dynamicModel->getIE());
 
     //! Set the lights if any.
-    ispc::VisRenderer_setLights(ispcEquivalent, getLightsFromData(getParamData("lights", NULL)));
+		void *lightData = getParamData("lights", NULL);
+		if (lightData)
+			ispc::VisRenderer_setLights(ispcEquivalent, getLightsFromData(getParamData("lights", NULL)));
 
     if (*(int *)(getParamData("nslices", NULL)->data))
     {

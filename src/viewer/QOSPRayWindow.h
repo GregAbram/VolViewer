@@ -33,8 +33,8 @@ public:
   QOSPRayWindow(QMainWindow *parent, OSPRenderer renderer, bool showFrameRate);
   virtual ~QOSPRayWindow();
 
-	void saveState(Document&);
-	void loadState(Document&);
+	void saveState(Document&, Value&);
+	void loadState(Value&);
 
   void setRenderingEnabled(bool renderingEnabled);
   void setRotationRate(float rotationRate);

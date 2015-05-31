@@ -37,7 +37,7 @@ VolumeViewer::VolumeViewer(bool showFrameRate)
   //! Create an OSPRay window and set it as the central widget, but don't let it start rendering until we're done with setup.
   osprayWindow = new QOSPRayWindow(this, renderer, showFrameRate);  setCentralWidget(osprayWindow);
 
-	lights.commit(renderer);
+	// lights.commit(renderer);
   
   //! Configure the user interface widgets and callbacks.
   initUserInterfaceWidgets();
@@ -137,26 +137,38 @@ void VolumeViewer::loadState(std::string statename)
   doc.Parse(xyzzy);
 	in.close();
 
-	if (! doc.HasMember("Volume"))
+	if (! doc["State"].HasMember("Volume"))
 	{
     std::cerr << "no volume?\n";
 		return;
 	}
 
-	getWindow()->loadState(doc);
-	getWindow()->commit();
+	if (doc["State"].HasMember("Camera") )
+	{
+		getWindow()->loadState(doc["State"]["Camera"]);
+		getWindow()->commit();
+	}
 
-	getLights().loadState(doc);
-	getLights().commit(renderer);
+	if (doc["State"].HasMember("Lights"))
+	{
+		getLights().loadState(doc["State"]["Lights"]);
+		getLights().commit(renderer);
+	}
 
-	importFromFile(doc["Volume"].GetString());
+	importFromFile(doc["State"]["Volume"].GetString());
 
-	getTransferFunctionEditor().loadState(doc);			// Encompases colormap and opacity
-	getSlicesEditor().loadState(doc);
+	if (doc["State"].HasMember("TransferFunction"))
+		getTransferFunctionEditor().loadState(doc["State"]["TransferFunction"]);			// Encompases colormap and opacity
 
-	getIsosEditor().loadState(doc);
-	getIsosEditor().commit(&volume);
-	volume.commit();
+	if (doc["State"].HasMember("Slices"))
+		getSlicesEditor().loadState(doc["State"]["Slices"]);
+	
+	if (doc["State"].HasMember("Isosurfaces"))
+	{
+		getIsosEditor().loadState(doc["State"]["Isosurfaces"]);
+		getIsosEditor().commit(&volume);
+		volume.commit();
+	}
 
 	float vmin, vmax;
 	volume.GetMinMax(vmin, vmax);
@@ -181,13 +193,17 @@ void VolumeViewer::saveState()
 	Document doc;
 	doc.Parse("{}");
 
-	doc.AddMember("Volume", Value().SetString(volumeName.c_str(), doc.GetAllocator()), doc.GetAllocator());
+	Value state(kObjectType);
 
-	getWindow()->saveState(doc);
-	getLights().saveState(doc);
-	getTransferFunctionEditor().saveState(doc);
-	getSlicesEditor().saveState(doc);
-	getIsosEditor().saveState(doc);
+	state.AddMember("Volume", Value().SetString(volumeName.c_str(), doc.GetAllocator()), doc.GetAllocator());
+
+	getWindow()->saveState(doc, state);
+	getLights().saveState(doc, state);
+	getTransferFunctionEditor().saveState(doc, state);
+	getSlicesEditor().saveState(doc, state);
+	getIsosEditor().saveState(doc, state);
+
+	doc.AddMember("State", state, doc.GetAllocator());
 
   StringBuffer sbuf;
   PrettyWriter<StringBuffer> writer(sbuf);

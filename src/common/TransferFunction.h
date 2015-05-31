@@ -41,31 +41,24 @@ public:
 	void SetAlphas(vector<osp::vec2f> a) { alphas = a; }
 	vector<osp::vec2f> GetAlphas() { return alphas; }
 
-	void loadState(Document &doc)
+	void loadState(Value &section)
 	{
-		if (! doc.HasMember("TransferFunction"))
-		{
-			std::cerr << "No TransferFunction state\n";
-		}
-		else
-		{
-			alphas.clear();
+		alphas.clear();
 
-			for (Value::ConstValueIterator itr = doc["TransferFunction"]["Opacity"].Begin(); itr != doc["TransferFunction"]["Opacity"].End(); ++itr)
-      {
-				float x, a;
-        std::stringstream ss(itr->GetString());
-				ss >> x >> a;
-				alphas.push_back(osp::vec2f(x, a));
-			}
-
-			SetScale((float)doc["TransferFunction"]["Scale"].GetDouble());
-			SetMin((float)doc["TransferFunction"]["Min"].GetDouble());
-			SetMax((float)doc["TransferFunction"]["Max"].GetDouble());
+		for (Value::ConstValueIterator itr = section["Opacity"].Begin(); itr != section["Opacity"].End(); ++itr)
+		{
+			float x, a;
+			std::stringstream ss(itr->GetString());
+			ss >> x >> a;
+			alphas.push_back(osp::vec2f(x, a));
 		}
+
+		SetScale((float)section["Scale"].GetDouble());
+		SetMin((float)section["Min"].GetDouble());
+		SetMax((float)section["Max"].GetDouble());
 	}
 
-  void saveState(Document &doc)
+  void saveState(Document &doc, Value &section)
 	{
 		Value tf(kObjectType);
 
@@ -83,7 +76,7 @@ public:
 		tf.AddMember("Min", Value().SetDouble((double)GetMin()), doc.GetAllocator());
 		tf.AddMember("Max", Value().SetDouble((double)GetMax()), doc.GetAllocator());
 
-		doc.AddMember("TransferFunction", tf, doc.GetAllocator());
+		section.AddMember("TransferFunction", tf, doc.GetAllocator());
 	}
 
 	void commit(OSPRenderer& r)

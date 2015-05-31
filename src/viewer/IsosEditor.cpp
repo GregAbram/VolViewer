@@ -34,10 +34,10 @@ IsosEditor::IsosEditor()
 }
 
 void 
-IsosEditor::loadState(Document &doc)
+IsosEditor::loadState(Value &section)
 {
 	active = false;
-	isos.loadState(doc);
+	isos.loadState(section);
 	setup();
 	active = true;
 	isoModified();
@@ -60,9 +60,9 @@ IsosEditor::setup()
 }
 
 void 
-IsosEditor::saveState(Document& out)
+IsosEditor::saveState(Document &doc, Value &section)
 {
-	isos.saveState(out);
+	isos.saveState(doc, section);
 }
 
 void

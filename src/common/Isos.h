@@ -37,29 +37,22 @@ public:
 	void  SetOnOff(int i, bool b)   { if (i > 2) i = 2; onoffs[i] = b; }
 	bool  GetOnOff(int i)   { if (i > 2) i = 2; return onoffs[i]; }
 
-	void loadState(Document &doc)
+	void loadState(Value &section)
 	{
-		if (! doc.HasMember("Isosurfaces"))
+		int j, i = 0;
+		for (Value::ConstValueIterator itr = section.Begin(); itr != section.End(); ++itr)
 		{
-			std::cerr << "No isosurface state\n";
+			std::stringstream ss(itr->GetString());
+			ss >> values[i] >> j;
+			onoffs[i] = (j == 1);
+			i++;
+			if (i > 3) break;
 		}
-		else
-		{
-			int j, i = 0;
-			for (Value::ConstValueIterator itr = doc["Isosurfaces"].Begin(); itr != doc["Isosurfaces"].End(); ++itr)
-			{
-				std::stringstream ss(itr->GetString());
-				ss >> values[i] >> j;
-				onoffs[i] = (j == 1);
-				i++;
-				if (i > 3) break;
-			}
-			for ( ; i < 3; i++)
-				onoffs[i] = false;
-		}
+		for ( ; i < 3; i++)
+			onoffs[i] = false;
 	}
 
-	void saveState(Document &doc)
+	void saveState(Document &doc, Value &section)
 	{
 		Value a(kArrayType);
 
@@ -67,10 +60,10 @@ public:
 		{
 			std::stringstream ss;
 			ss << values[i] << " " << (onoffs[i] ? 1 : 0);
-			a.PushBack(Value().SetString(ss.str().c_str(), doc.GetAllocator()), doc.GetAllocator());
+			a.PushBack(Value().SetString(ss.str().c_str(), doc.GetAllocator()),doc.GetAllocator());
 		}
 			
-		doc.AddMember("Isosurfaces", a, doc.GetAllocator());
+		section.AddMember("Isosurfaces", a, doc.GetAllocator());
 	}
 
 	void commit(MyVolume *vol)

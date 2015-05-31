@@ -54,25 +54,19 @@ public:
 	vector<osp::vec3f> getColors() {return colors; }
 	string getName() { return name; }
 
-	void saveState(Document &doc)
+	void saveState(Document &doc, Value &section)
 	{
 		Value cmap(kObjectType), fname(kObjectType);
-		doc.AddMember("Colormap", cmap, doc.GetAllocator());
 		fname.SetString(getName().c_str(), doc.GetAllocator());
-		doc["Colormap"].AddMember("filename", fname, doc.GetAllocator());
+		cmap.AddMember("filename", fname, doc.GetAllocator());
+
+		section.AddMember("Colormap", cmap, doc.GetAllocator());
 	}
 		
 
-	void loadState(Document &doc)
+	void loadState(Value &section)
 	{
-		if (! doc.HasMember("Colormap"))
-		{
-			std::cerr << "No colormap state\n";
-		}
-		else
-		{
-			loadfile(doc["Colormap"]["filename"].GetString());
-		}
+		loadfile(section["filename"].GetString());
 	}
 
 	void commit(TransferFunction& t)

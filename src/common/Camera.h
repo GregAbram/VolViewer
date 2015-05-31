@@ -9,6 +9,7 @@
 
 #include <math.h>
 
+#include "Lights.h"
 
 class Camera
 {
@@ -129,84 +130,80 @@ public:
 		modified = true;
   }
 
-	void saveState(Document &doc)
+	void saveState(Document &doc, Value &section)
 	{
 		Value cam(kObjectType), s(kObjectType);
-
-		doc.AddMember("Camera", cam, doc.GetAllocator());
-
 		float v[3];
 
 		getPos(v);
 		std::stringstream  p;
 		p << v[0] << " " << v[1] << " " << v[2];
 		s.SetString(p.str().c_str(), doc.GetAllocator());
-		doc["Camera"].AddMember("viewpoint", s, doc.GetAllocator());
+		cam.AddMember("viewpoint", s, doc.GetAllocator());
 	
 		getDir(v);
 		std::stringstream  d;
 		d << v[0] << " " << v[1] << " " << v[2];
 		s.SetString(d.str().c_str(), doc.GetAllocator());
-		doc["Camera"].AddMember("viewdir", s, doc.GetAllocator());
+		cam.AddMember("viewdir", s, doc.GetAllocator());
 
 		std::stringstream  u;
 		u << up[0] << " " << up[1] << " " << up[2];
 		s.SetString(u.str().c_str(), doc.GetAllocator());
-		doc["Camera"].AddMember("viewup", s, doc.GetAllocator());
+		cam.AddMember("viewup", s, doc.GetAllocator());
 	
 		std::stringstream  a;
 		a << aspect;
 		s.SetString(a.str().c_str(), doc.GetAllocator());
-		doc["Camera"].AddMember("aspect", s, doc.GetAllocator());
+		cam.AddMember("aspect", s, doc.GetAllocator());
 	
 		std::stringstream  f;
 		f << fovY;
 		s.SetString(f.str().c_str(), doc.GetAllocator());
-		doc["Camera"].AddMember("fovy", s, doc.GetAllocator());
+		cam.AddMember("fovy", s, doc.GetAllocator());
+
+		cameraLights.saveState(doc, cam);
+
+		section.AddMember("Camera", cam, doc.GetAllocator());
 	}
 
-	void loadState(Document &doc)
+	void loadState(Value& cam)
 	{
-		if (! doc.HasMember("Camera"))
-		{
-			std::cerr << "No camera state\n";
-		}
-		else
-		{
-			float v[3];
+		float v[3];
 
-			std::stringstream p;
-			p.str(doc["Camera"]["viewpoint"].GetString());
-			p >> v[0] >> v[1] >> v[2];
-			setPos(v);
+		std::stringstream p;
+		p.str(cam["viewpoint"].GetString());
+		p >> v[0] >> v[1] >> v[2];
+		setPos(v);
 
-			std::stringstream d;
-			d.str(doc["Camera"]["viewdir"].GetString());
-			d >> v[0] >> v[1] >> v[2];
-			setDir(v);
+		std::stringstream d;
+		d.str(cam["viewdir"].GetString());
+		d >> v[0] >> v[1] >> v[2];
+		setDir(v);
 
-			std::stringstream u;
-			u.str(doc["Camera"]["viewup"].GetString());
-			u >> up[0] >> up[1] >> up[2];
+		std::stringstream u;
+		u.str(cam["viewup"].GetString());
+		u >> up[0] >> up[1] >> up[2];
 
-			std::stringstream a;
-			a.str(doc["Camera"]["aspect"].GetString());
-			a >> aspect;
+		std::stringstream a;
+		a.str(cam["aspect"].GetString());
+		a >> aspect;
 
-			std::stringstream f;
-			f.str(doc["Camera"]["fovy"].GetString());
-			f >> fovY;
+		std::stringstream f;
+		f.str(cam["fovy"].GetString());
+		f >> fovY;
 
-			modified = true;
-			commit();
-		}
+		if (cam.HasMember("Lights"))
+			cameraLights.loadState(cam["Lights"]);
+
+		modified = true;
+		commit();
 	}
 
 	void commit()
 	{
 		if (modified)
 		{
-
 			osp::vec3f e = getPos(), d = getDir();
 
 			ospSetVec3f(ospCamera,"pos", e);
@@ -215,6 +212,9 @@ public:
 			ospSetf(ospCamera,"aspect",  aspect);
 			ospSetf(ospCamera,"fovy",    fovY);
 			ospCommit(ospCamera);
+
+			cameraLights.commit(renderer, frame);
+
 			modified = false;
 		}
 	}
@@ -246,9 +246,13 @@ public:
 		modified = true;
 	}
 
+	Lights *getLights() { return &cameraLights; };
+
 private:
 	OSPCamera ospCamera;
 	OSPRenderer renderer;
+
+	Lights cameraLights;
 
 	float phi, theta; 
 
@@ -261,7 +265,6 @@ private:
 	float eye_dist;
 	osp::vec3f center;
 	osp::vec3f eye_dir;
-	
 
   float fovY;
   float aspect;

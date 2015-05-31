@@ -44,8 +44,8 @@ signals:
 
 public slots:
 
-  void loadState(Document&);
-  void saveState(Document&);
+  void loadState(Value&);
+  void saveState(Document&, Value&);
   void loadColorMap();
 
 protected slots:

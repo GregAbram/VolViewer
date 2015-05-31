@@ -44,7 +44,7 @@ SlicesEditor::SlicesEditor()
 }
 
 void 
-SlicesEditor::loadState(Document& in)
+SlicesEditor::loadState(Value& in)
 {
 	active = false;
 
@@ -81,10 +81,10 @@ SlicesEditor::setup()
 }
 
 void 
-SlicesEditor::saveState(Document& out)
+SlicesEditor::saveState(Document& doc, Value &out)
 {
 	update();
-	slices.saveState(out);
+	slices.saveState(doc, out);
 }
 
 void
