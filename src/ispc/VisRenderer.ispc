@@ -1,4 +1,6 @@
-#define AMBIENT 0.4f
+#define AMBIENT 0.8f
+#define GDA 0
+#define NAO 16
 
 // ======================================================================== //
 // Copyright 2009-2015 Intel Corporation                                    //
@@ -22,8 +24,95 @@
 
 #include "ospray/volume/SharedStructuredVolume.ih"
 
-void VisRenderer_renderSample(Renderer *uniform pointer, varying ScreenSample &sample, 
-				varying int &n_continuation_rays, varying ScreenSample *continuation_rays);
+#include "UV.ih"
+
+// ContinuationRays are either primary rays that continue
+// beyond the current partition or secondary rays, which 
+// right now are limited to AO rays.  If its a primary ray,
+// then its a ScreenSample.  If its a AO ray, we just need
+// the distance it has travelled so far and the contribution
+// it will add to the pixel if it doesn't hit anything before
+// it hits the AO distance limit.  We'll use the 'Z' field of
+// the ScreenSample structure to hold that, so we just need
+// a 'type' field in addition to the ScreenSample structure.
+
+enum CRayType {
+	Primary, AO
+};
+
+struct ContinuationRay {
+	ScreenSample sample;
+	CRayType type;
+};
+
+bool VisRenderer_AO_intersect(uniform Renderer *uniform, varying ScreenSample &);
+void VisRenderer_renderSample(Renderer *uniform, varying ScreenSample &, varying int &, varying ContinuationRay *);
+
+void getBinormals(vec3f &biNorm0, vec3f &biNorm1, const vec3f &gNormal)
+{
+  biNorm0 = make_vec3f(1.f,0.f,0.f);
+  if (abs(dot(biNorm0,gNormal)) > .95f)
+    biNorm0 = make_vec3f(0.f,1.f,0.f);
+  biNorm1 = normalize(cross(biNorm0,gNormal));
+  biNorm0 = normalize(cross(biNorm1,gNormal));
+}
+
+inline vec3f getRandomDir(const int i,
+                          const vec3f biNorm0,
+                          const vec3f biNorm1,
+                          const vec3f gNormal,
+													const float epsilon)
+{
+  const float r0 = VisRenderer_randomU[i];
+  const float r1 = VisRenderer_randomV[i];
+
+  const float w = sqrt(1.f-r1);
+  const float x = cos((2.f*M_PI)*r0)*w;
+  const float y = sin((2.f*M_PI)*r0)*w;
+  const float z = sqrt(r1)+epsilon;
+
+  vec3f rd = x*biNorm0+y*biNorm1+z*gNormal;
+	return rd;
+}
+
+void generateAORays(VisRenderer *uniform renderer, ScreenSample sample, const vec3f normal, vec3f ambientColor, const uniform float epsilon, varying int &n_continuation_rays, varying ContinuationRay *continuation_rays)
+{
+#if 0
+	print("GAOR\norg:\nX %\nY %\nZ %\ndir:\nX %\nY %\nZ %\nt %\n",
+				sample.ray.org.x,
+				sample.ray.org.y,
+				sample.ray.org.z,
+				sample.ray.dir.x,
+				sample.ray.dir.y,
+				sample.ray.dir.z,
+				sample.ray.t);
+#endif
+
+	vec3f hitPoint = sample.ray.org + sample.ray.t * sample.ray.dir;
+
+	ambientColor = (1.0 / NAO) * ambientColor;
+
+	vec3f b0, b1;
+	getBinormals(b0, b1, normal);
+	
+	for (int i = 0; i < NAO; i++)
+	{
+		int32 j;
+		rdrand(&j);
+		vec3f d = getRandomDir(j & 0xff, b0, b1, normal, renderer->inherited.epsilon);
+
+		continuation_rays[n_continuation_rays].sample.sampleID = sample.sampleID;
+		continuation_rays[n_continuation_rays].sample.ray.org  = hitPoint;
+		continuation_rays[n_continuation_rays].sample.ray.dir  = d;
+		continuation_rays[n_continuation_rays].sample.ray.t		 = 0;
+		continuation_rays[n_continuation_rays].sample.rgb.x		 = ambientColor.x;
+		continuation_rays[n_continuation_rays].sample.rgb.y		 = ambientColor.y;
+		continuation_rays[n_continuation_rays].sample.rgb.z		 = ambientColor.z;
+		continuation_rays[n_continuation_rays].sample.alpha		 = 0.0;
+		continuation_rays[n_continuation_rays].type 					 = AO;
+		n_continuation_rays++;
+	}
+}
 
 void VisRenderer_renderFramePostamble(Renderer *uniform renderer, const uniform int32 accumID)
 { 
@@ -56,12 +145,6 @@ vec3f VisRenderer_computeTotalLambertianIntensity(VisRenderer *uniform renderer,
 	for (uniform int i = 0; i < renderer->numLights; i++)
 	{
 		vec3f lightRadiance = renderer->lights[i]->computeRadiance(renderer->lights[i], point, lightDirection, lightDistance);
-		 // print("LX: %\n", lightDirection.x);
-		 // print("LY: %\n", lightDirection.y);
-		 // print("LZ: %\n", lightDirection.z);
-		 // print("LR: %\n", lightRadiance.x);
-		 // print("LG: %\n", lightRadiance.y);
-		 // print("LB: %\n", lightRadiance.z);
 
 		float cosNL;
 		if (isnan(normal.x + normal.y + normal.z))
@@ -72,10 +155,6 @@ vec3f VisRenderer_computeTotalLambertianIntensity(VisRenderer *uniform renderer,
 			if (cosNL < 0) cosNL = -cosNL;
 		}
 		totalRadiance = totalRadiance + cosNL * lightRadiance;
-		 // print("TR: %\n", totalRadiance.x);
-		 // print("TG: %\n", totalRadiance.y);
-		 // print("TB: %\n", totalRadiance.z);
-		 // print("===============\n");
 	}
 	return totalRadiance;
 }
@@ -98,33 +177,71 @@ void VisRenderer_renderTile(uniform Renderer *uniform self, uniform Tile &tile)
 
 	CameraSample cameraSample;
 
-	for (uint32 i=programIndex;i<TILE_SIZE*TILE_SIZE;i+=programCount) {
+	uniform ContinuationRay continuation_rays[32*32]; 
+	uniform int n_continuation_rays[32];
 
-		const uint32 pixel = z_order.xs[i] + (z_order.ys[i] * TILE_SIZE);
+	for (uint32 I = 0; I < TILE_SIZE*TILE_SIZE; I += programCount)
+	{
+		const uint32 pixel = z_order.xs[I+programIndex] + (z_order.ys[I+programIndex] * TILE_SIZE);
 		assert(pixel < TILE_SIZE*TILE_SIZE);
 
-		screenSample.sampleID.x        = tile.region.lower.x + z_order.xs[i];
-		screenSample.sampleID.y        = tile.region.lower.y + z_order.ys[i];
+		screenSample.sampleID.x        = tile.region.lower.x + z_order.xs[I+programIndex];
+		screenSample.sampleID.y        = tile.region.lower.y + z_order.ys[I+programIndex];
 
-		if ((screenSample.sampleID.x >= fb->size.x) | (screenSample.sampleID.y >= fb->size.y)) 
-			continue;
+		n_continuation_rays[programIndex] = 0;
 
-		cameraSample.screen.x = (screenSample.sampleID.x + pixel_du) * fb->rcpSize.x;
-		cameraSample.screen.y = (screenSample.sampleID.y + pixel_dv) * fb->rcpSize.y;
+		if ((screenSample.sampleID.x < fb->size.x) & (screenSample.sampleID.y < fb->size.y)) 
+		{
+			cameraSample.screen.x = (screenSample.sampleID.x + pixel_du) * fb->rcpSize.x;
+			cameraSample.screen.y = (screenSample.sampleID.y + pixel_dv) * fb->rcpSize.y;
 
-		camera->initRay(camera, screenSample.ray, cameraSample);
+			camera->initRay(camera, screenSample.ray, cameraSample);
 
-		varying ScreenSample continuation_rays[32]; varying int n_continuation_rays;
-		VisRenderer_renderSample(self, screenSample, n_continuation_rays, continuation_rays);
+			int n = 0;
+			ContinuationRay ptr[32];
+			VisRenderer_renderSample(self, screenSample, n, ptr);
 
-		setRGBAZ(tile,pixel,screenSample.rgb,screenSample.alpha,screenSample.z);
+			n_continuation_rays[programIndex] = n;
+			for (int j = 0; j < n; j++)
+				continuation_rays[programIndex*32 + j] = ptr[j];
+
+			n_continuation_rays[programIndex] = n;
+
+			setRGBAZ(tile,pixel,screenSample.rgb,screenSample.alpha,screenSample.z);
+		}
+
+		if (programIndex == 0)
+		{
+			for (uint32 i = 0; i < programCount; i++)
+			{
+				const uint32 pixel = z_order.xs[I+i] + (z_order.ys[I+i] * TILE_SIZE);
+				for (uint32 j = 0; j <  n_continuation_rays[i]; j++)
+				{
+					if (continuation_rays[i*32 + j].type == AO)
+					{
+						ScreenSample s = continuation_rays[i*32 + j].sample;
+						s.ray.t0 = 1e-6f;
+						s.ray.t  = infinity;
+						if (VisRenderer_AO_intersect(self,  s))
+						{
+							// print("n");
+						}
+						else
+						{
+							addRGBAZ(tile, pixel, continuation_rays[i*32 + j].sample.rgb, 0.0, 0.0);
+							// print("y");
+						}
+					}
+				}
+			}
+		}
   }
 }
 
 // Test the origin point against the clipping planes to see if we start the ray in 
 // a clipped region.  If so, we figure out the t where the ray resumes.
 
-inline void VisRenderer_initializeClip(VisRenderer *uniform renderer, varying Ray &ray, varying int *hit)
+inline void VisRenderer_initializeClip(VisRenderer *uniform renderer, varying Ray &ray, varying int *slicesThatHaveBeenHit)
 {
 	// Assume no more than 32 slices
 	float t[32];
@@ -182,23 +299,71 @@ inline void VisRenderer_initializeClip(VisRenderer *uniform renderer, varying Ra
 
   // Now we have hit any slices that are before t0
 	for (int i = 0; i < renderer->sliceCount; i++)
-	  hit[i] = (t[i] < ray.t);
+	  slicesThatHaveBeenHit[i] = (t[i] < ray.t);
+}
+
+inline void VisRenderer_intersectVisibleSlice(VisRenderer *uniform renderer, Volume *uniform volume, varying Ray &ray)
+{
+	// Find the closest OPAQUE slice
+
+	float t,  nearest_t = infinity;
+	int ni = -1;
+#if 0
+	print("IVS \nOX %\nOY %\nOZ %\nDX %\nDY %\nDZ %\n",
+			ray.org.x, ray.org.y, ray.org.z,
+			ray.dir.x, ray.dir.y, ray.dir.z);
+#endif
+
+  for (int i = 0; i < renderer->sliceCount; i++)
+  {
+		if (renderer->sliceVisibility[i] == 1)
+		{
+
+			float d = dot(ray.dir, renderer->slicenorms[i]);
+			if (d != 0.0)
+			{
+				float t = -(dot(ray.org, renderer->slicenorms[i]) + renderer->sliceds[i]) / d;
+				if (t > 0.001 && t <= ray.t1)
+				{
+#if 0
+					print("%\nSA %\nSB %\nSC %\nSD %\nT %\n",
+							i,
+							renderer->slicenorms[i].x, renderer->slicenorms[i].y, renderer->slicenorms[i].z, renderer->sliceds[i],
+							t);
+#endif
+					if (t < nearest_t)
+					{
+						nearest_t = t;
+						ni = i;
+					}
+				}
+			}
+		}
+	}
+
+	ray.t = nearest_t;
+#if 0
+	if (nearest_t < 1000)
+		print("T %\nI %\n", nearest_t, ni);
+#endif
 }
 
 inline void VisRenderer_computeSliceSample(VisRenderer *uniform renderer,
                                                       Volume *uniform volume,
                                                       varying Ray &ray,
-                                                      varying vec4f &color,
-																											varying int *hit)
+																											varying vec3f &ambientColor,
+																											varying vec4f &lambertianColor,
+																											varying int *slicesThatHaveBeenHit,
+																											varying int &sliceThatWasHit)
 {
 	// Find the closest slice
 
 	float t,  nearest_t = infinity;
-  varying int sliceHit = -1;
+  sliceThatWasHit = -1;
   for (int i = 0; i < renderer->sliceCount; i++)
   {
 		// Ignore any slices we've already hit
-		if (hit[i]) 
+		if (slicesThatHaveBeenHit[i]) 
 				continue;
 
     float d = dot(ray.dir, renderer->slicenorms[i]);
@@ -209,7 +374,7 @@ inline void VisRenderer_computeSliceSample(VisRenderer *uniform renderer,
 			{
 				if (t < nearest_t)
 				{
-					sliceHit = i;
+					sliceThatWasHit = i;
 					nearest_t = t;
 				}
 			}
@@ -218,19 +383,19 @@ inline void VisRenderer_computeSliceSample(VisRenderer *uniform renderer,
 
 	// If we didn't hit a slice, OK
 
-	if (sliceHit == -1)
+	if (sliceThatWasHit == -1)
 	{
 		ray.t = infinity;
 		return;
 	}
 
-	hit[sliceHit] = true;
+	slicesThatHaveBeenHit[sliceThatWasHit] = true;
 
 	ray.t = nearest_t;
 
 	// If this slice is visible...
 
-	if (renderer->sliceVisibility[sliceHit] == 1)
+	if (renderer->sliceVisibility[sliceThatWasHit] == 1)
 	{
 		varying vec3f hit = ray.org + nearest_t * ray.dir;
 
@@ -246,14 +411,16 @@ inline void VisRenderer_computeSliceSample(VisRenderer *uniform renderer,
 		{
 			const float sample = volume->computeSample(volume, hit);
 			const vec3f sampleColor = volume->transferFunction->getColorForValue(volume->transferFunction, sample);
-			const float opacity = volume->transferFunction->getOpacityForValue(volume->transferFunction, sample);
 
-			vec3f totalRadiance = VisRenderer_computeTotalLambertianIntensity(renderer, hit, renderer->slicenorms[sliceHit]);
-			
-			const float ambient = AMBIENT;
-			const vec3f litColor = sampleColor * (ambient + ((1.f - ambient)* totalRadiance));
+			float opacity = volume->transferFunction->getOpacityForValue(volume->transferFunction, sample);
+			opacity = 1.0;
 
-			color = make_vec4f(litColor.x, litColor.y, litColor.z, 1.0);
+			vec3f totalRadiance = opacity * sampleColor * VisRenderer_computeTotalLambertianIntensity(renderer, hit, renderer->slicenorms[sliceThatWasHit]);
+
+			ambientColor    = AMBIENT * totalRadiance;
+
+			vec3f t = (1.f - AMBIENT) * totalRadiance;
+			lambertianColor = make_vec4f(t.x, t.y, t.z, opacity);
     }
   }
 }
@@ -294,10 +461,67 @@ inline void VisRenderer_computeVolumeSample(VisRenderer *uniform renderer,
   color = clamp(sampleOpacity / volume->samplingRate) * make_vec4f(sampleColor.x, sampleColor.y, sampleColor.z, 1.0f);
 }
 
+inline void VisRenderer_intersectIsosurface(VisRenderer *uniform renderer, Volume *uniform volume, varying Ray &ray)
+{
+  //! Terminate if there are no isovalues.
+  if (volume->numIsovalues == 0) {
+    ray.t = infinity;
+    return;
+  }
+
+  //! Advance the ray.
+  volume->intersectIsosurface(volume, volume->isovalues, volume->numIsovalues, ray); 
+	if (ray.t > ray.t1) return;
+
+  //! Sample the volume at the hit point in world coordinates.
+
+  float t0 = ray.t;
+  float sample0 = volume->computeSample(volume, ray.org + ray.t * ray.dir);
+
+  while(1) {
+
+    //! Advance the ray.
+    volume->intersectIsosurface(volume, volume->isovalues, volume->numIsovalues, ray);  
+		if (ray.t > ray.t1) 
+			return;
+
+    float t = ray.t;
+    float sample = volume->computeSample(volume, ray.org);
+
+    //! Find the t value and record the isovalue for the first isosurface intersection.
+
+    float tHit = infinity;
+    float isovalueHit;
+
+    if (!isnan(sample0+sample))
+		{
+      for (uniform int i=0; i<volume->numIsovalues; i++)
+			{
+        if ((volume->isovalues[i] - sample0) * (volume->isovalues[i] - sample) <= 0.f) {
+          const float tIso = t0 + (volume->isovalues[i] - sample0) / (sample - sample0) * (t - t0);
+
+          if (tIso < tHit) tHit = tIso;
+        }
+      }
+    }
+
+    if (tHit <= ray.t1)
+		{
+			ray.t = tHit;
+      return;
+    }
+
+    t0 = t;
+    sample0 = sample;
+  }
+}
+
 inline void VisRenderer_computeIsosurfaceSample(VisRenderer *uniform renderer,
                                                           Volume *uniform volume,
                                                           varying Ray &ray,
-                                                          varying vec4f &color)
+                                                          varying vec3f &ambientColor,
+                                                          varying vec4f &lambertianColor,
+																													varying vec3f &normal)
 {
   //! Terminate if there are no isovalues.
   if (volume->numIsovalues == 0) {
@@ -351,29 +575,35 @@ inline void VisRenderer_computeIsosurfaceSample(VisRenderer *uniform renderer,
       vec3f sampleColor = volume->transferFunction->getColorForValue(volume->transferFunction, isovalueHit);
 
 			//! Use volume gradient as the normal.
-			const vec3f gradient = normalize(volume->computeGradient(volume, coordinates));
-
-			vec3f totalRadiance = VisRenderer_computeTotalLambertianIntensity(renderer, coordinates, gradient);
-
-      const float ambient = AMBIENT;
-      sampleColor = sampleColor * (ambient + ((1.f-ambient) * totalRadiance));
+			normal = normalize(volume->computeGradient(volume, coordinates));
 
       //! Assume fully opaque isosurfaces for now.
       const float sampleOpacity = 1.f;
 
-      //! Set the color contribution for this sample only (do not accumulate).
-      color = sampleOpacity * make_vec4f(sampleColor.x, sampleColor.y, sampleColor.z, 1.0f);
+			vec3f totalRadiance = sampleOpacity * sampleColor * VisRenderer_computeTotalLambertianIntensity(renderer, coordinates, normal);
 
-			// color = make_vec4f(1.0, 0.0, 0.0, 1.0);
+			ambientColor    = AMBIENT * totalRadiance;
+
+			vec3f t = (1.f - AMBIENT) * totalRadiance;
+			lambertianColor = make_vec4f(t.x, t.y, t.z, sampleOpacity);
 
       ray.t = tHit;
-
-      //! Only one hit at a time.
       return;
     }
 
     t0 = t;
     sample0 = sample;
+  }
+}
+
+inline void VisRenderer_intersectGeometry(VisRenderer *uniform renderer, varying Ray &ray)
+{
+  Ray dynamicRay = ray;
+  traceRay(renderer->dynamicModel, dynamicRay);
+  traceRay(renderer->model, ray);
+
+  if(dynamicRay.t < ray.t) {
+    ray.t = dynamicRay.t;
   }
 }
 
@@ -460,16 +690,50 @@ inline void VisRenderer_intersectBox(const uniform box3f &box,
   ray.t1 = min(min(ray.t, max(minimum.x, maximum.x)), min(max(minimum.y, maximum.y), max(minimum.z, maximum.z)));
 }
 
+inline void VisRenderer_AO_intersectBox(const uniform box3f &box, 
+                                               varying Ray &ray) 
+{
+  //! Intersection interval minimum per axis.
+  vec3f minimum = rcp(ray.dir) * (box.lower - ray.org);
+  vec3f maximum = rcp(ray.dir) * (box.upper - ray.org);
+
+	if (ray.dir.x == 0) minimum.x = maximum.x = infinity;
+	if (ray.dir.y == 0) minimum.y = maximum.y = infinity;
+	if (ray.dir.z == 0) minimum.z = maximum.z = infinity;
+
+  //! Distance along the ray to the entry point.
+  ray.t0 = 0.0;
+  ray.t1 = max(max(ray.t0, min(minimum.x, maximum.x)), max(min(minimum.y, maximum.y), min(minimum.z, maximum.z)));
+
+#if 1
+	if (ray.t1 < 0)
+	{
+	print("AOIB\nlower\nx %\ny %\nz %\nupper\nx %\ny %\nz %\norg\nx %\ny %\nz %\ndir\nx %\ny %\nz %\n",
+			box.lower.x, box.lower.y, box.lower.z,
+			box.upper.x, box.upper.y, box.upper.z,
+			ray.org.x, ray.org.y, ray.org.z,
+			ray.dir.x, ray.dir.y, ray.dir.z);
+	print("min:\nX %\nY %\nZ %\n", minimum.x, minimum.y, minimum.z);
+	print("max:\nX %\nY %\nZ %\n", maximum.x, maximum.y, maximum.z);
+	print("T0 %\nT1 %\n", ray.t0, ray.t1);
+	}
+#endif
+}
+
+//==================================================
+
 //! This function intersects the volume and geometries.
-inline void VisRenderer_intersect(uniform VisRenderer *uniform renderer,
-                                            varying Ray &ray,
+inline bool VisRenderer_intersect(uniform VisRenderer *uniform renderer,
+                                            varying ScreenSample &screenSample,
                                             const varying float &rayOffset,
                                             varying vec4f &color,
 																						varying int &n_continuation_rays, 
-																						varying ScreenSample *continuation_rays)
+																						varying ContinuationRay *continuation_rays)
 {
+	varying Ray &ray = screenSample.ray;
+
 	// Assume no more than 32(?) slices
-	varying int slicesHit[32];
+	varying int slicesThatHaveBeenHit[32];
 
   //! Assume just one volume.
 
@@ -483,23 +747,23 @@ inline void VisRenderer_intersect(uniform VisRenderer *uniform renderer,
   VisRenderer_intersectBox(boundingBox, ray);
 
 	// If the exit point is in front of the entry point (say, what?) or the ray hits a clipping before the 
-	// volume itself, quit.
+	// volume itself, quit.   This is a ray termination.
   if (ray.t0 > ray.t1)
-    return;
+    return true;
 
   ray.t = ray.t0;
 
 	// Lop off any part of the ray.t -> ray.t1 interval thats
 	// clipped away.
 
-	VisRenderer_initializeClip(renderer, ray, slicesHit);
+	VisRenderer_initializeClip(renderer, ray, slicesThatHaveBeenHit);
 
   //! Maximum extent for the volume bounds.
   const float tMax = ray.t1;
 
   //! Offset ray by a fraction of the nominal ray step.
   const uniform float step = renderer->model->volumes[0]->samplingStep / renderer->model->volumes[0]->samplingRate;
-  ray.t += rayOffset * step;
+  ray.t += 0.01 * step;
 
   //! Copy of the ray for volume isosurface intersection. The original ray is used for volume intersection.
   Ray isosurfaceRay = ray;
@@ -523,18 +787,34 @@ inline void VisRenderer_intersect(uniform VisRenderer *uniform renderer,
   vec4f geometryColor = color;
   vec4f sliceColor = color;
 
+	vec3f isosurfaceNormal;
+	vec4f isosurfaceLambertian;
+	vec3f isosurfaceAmbient;
+
+	vec4f sliceLambertian;
+	vec3f sliceAmbient;
+	int sliceThatWasHit;
+
   //! Initial trace through the volume and geometries.
   VisRenderer_computeVolumeSample(renderer, renderer->model->volumes[0], ray, volumeColor);
-  VisRenderer_computeIsosurfaceSample(renderer, renderer->model->volumes[0], isosurfaceRay, isosurfaceColor);
+  VisRenderer_computeIsosurfaceSample(renderer, renderer->model->volumes[0], isosurfaceRay, isosurfaceAmbient, isosurfaceLambertian, isosurfaceNormal);
+#if GDA
+	print("CIS\nR %\nG %\nB%\n", isosurfaceAmbient.x, isosurfaceAmbient.y, isosurfaceAmbient.z);
+#endif
+
   VisRenderer_computeGeometrySample(renderer, geometryRay, geometryColor);
-  VisRenderer_computeSliceSample(renderer, renderer->model->volumes[0], sliceRay, sliceColor, slicesHit);
+  VisRenderer_computeSliceSample(renderer, renderer->model->volumes[0], sliceRay, sliceAmbient, sliceLambertian, slicesThatHaveBeenHit, sliceThatWasHit);
+#if 0
+	print("CSS\nAR %\nAG %\nAB%\n", sliceAmbient.x, sliceAmbient.y, sliceAmbient.z);
+	print("LR %\nLG %\nLB %\n", sliceLambertian.x, sliceLambertian.y, sliceLambertian.z);
+#endif
 
   //! Trace the ray through the volume and geometries.
   float firstHit;
 
 	int k = 0;
 
-  while ((firstHit = min(min(min(ray.t, sliceRay.t), isosurfaceRay.t), geometryRay.t)) <= tMax && 
+  while ((firstHit = min(min(min(ray.t, sliceRay.t), isosurfaceRay.t), geometryRay.t)) < tMax && 
 					min(min(color.x, color.y), color.z) < 1.0f && color.w < 0.99f)
 	{
     if (firstHit == ray.t) {
@@ -545,11 +825,27 @@ inline void VisRenderer_intersect(uniform VisRenderer *uniform renderer,
       //! Trace next volume ray.
       VisRenderer_computeVolumeSample(renderer, renderer->model->volumes[0], ray, volumeColor);
     }
+
 // TODO - hey I think this skips the last interval of volume in front of surfaces!
+
     else if (firstHit == isosurfaceRay.t) {
 
       //! Isosurface contribution.
-      color = color + (1.0f - color.w) * isosurfaceColor;
+      color = color + (1.0f - color.w) * isosurfaceLambertian;
+
+#if GDA
+			print("AAA\nR %\nG %\nB%\n", isosurfaceAmbient.x, isosurfaceAmbient.y, isosurfaceAmbient.z);
+#endif
+
+			screenSample.ray.t = isosurfaceRay.t;
+			generateAORays(renderer, screenSample, isosurfaceNormal, isosurfaceAmbient,
+											 renderer->inherited.epsilon, n_continuation_rays, continuation_rays);
+
+			if (min(min(color.x, color.y), color.z) >= 1.0f || color.w >= 0.99f)
+			{
+				// This is a termination.
+				return true;
+			}
 
       //! Reset isosurface ray.
       isosurfaceRay.t = isosurfaceRay.t + epsilon;
@@ -558,12 +854,20 @@ inline void VisRenderer_intersect(uniform VisRenderer *uniform renderer,
       isosurfaceRay.instID = -1;
 
       //! Trace next isosurface ray.
-      VisRenderer_computeIsosurfaceSample(renderer, renderer->model->volumes[0], isosurfaceRay, isosurfaceColor);
+			VisRenderer_computeIsosurfaceSample(renderer, renderer->model->volumes[0], isosurfaceRay, isosurfaceAmbient, isosurfaceLambertian, isosurfaceNormal);
     }
     else if (firstHit == geometryRay.t) {
 
       //! Geometry contribution.
       color = color + (1.0f - color.w) * geometryColor;
+			if (min(min(color.x, color.y), color.z) >= 1.0f || color.w >= 0.99f)
+			{
+#if GDA
+				print("g");
+#endif
+				// This is a termination.
+				return true;
+			}
 
       //! Reset geometry ray.
       geometryRay.t0 = geometryRay.t + epsilon;
@@ -579,7 +883,19 @@ inline void VisRenderer_intersect(uniform VisRenderer *uniform renderer,
 
       //! Geometry contribution.
 
-      color = color + (1.0f - color.w) * sliceColor;
+      color = color + (1.0f - color.w) * sliceLambertian;
+
+			screenSample.ray.t = sliceRay.t;
+			generateAORays(renderer, screenSample, renderer->slicenorms[sliceThatWasHit], sliceAmbient, renderer->inherited.epsilon, n_continuation_rays, continuation_rays);
+
+			if (min(min(color.x, color.y), color.z) >= 1.0f || color.w >= 0.99f)
+			{
+#if GDA
+				print("s");
+#endif
+				// This is a termination.
+				return true;
+			}
 
 			//! Reset slice ray.
 			sliceRay.t = sliceRay.t + epsilon;
@@ -588,14 +904,43 @@ inline void VisRenderer_intersect(uniform VisRenderer *uniform renderer,
 			sliceRay.instID = -1;
 
 			//! Trace next slice ray.
-			VisRenderer_computeSliceSample(renderer, renderer->model->volumes[0], sliceRay, sliceColor, slicesHit);
+			VisRenderer_computeSliceSample(renderer, renderer->model->volumes[0], sliceRay, sliceAmbient, sliceLambertian, slicesThatHaveBeenHit, sliceThatWasHit);
 		}
   }
+
+	if (firstHit >= tMax)
+	{
+#if GDA
+		print("x firstHit %\n", firstHit);
+		print("x tMax %\n", tMax);
+#endif
+
+		// This will be the continuation of a primary ray.
+
+		continuation_rays[n_continuation_rays].sample.sampleID = screenSample.sampleID;
+		continuation_rays[n_continuation_rays].sample.ray = ray;
+		continuation_rays[n_continuation_rays].sample.rgb.x = color.x;
+		continuation_rays[n_continuation_rays].sample.rgb.y = color.y;
+		continuation_rays[n_continuation_rays].sample.rgb.z = color.z;
+		continuation_rays[n_continuation_rays].sample.alpha = color.w;
+		continuation_rays[n_continuation_rays].type = Primary;
+		n_continuation_rays++;
+
+		// NOT a termination - hit the back of the partition
+		return false;
+	}
+	else
+	{
+		// Broke out due to opacity - volume accumulation, I guess
+		return true;
+		print("y");
+	}
 }
 
 void VisRenderer_renderSample(Renderer *uniform pointer, varying ScreenSample &sample, 
-												varying int &n_continuation_rays, varying ScreenSample *continuation_rays)
+												varying int &n_continuation_rays, varying ContinuationRay *continuation_rays)
 {
+
   //! Cast to the actual Renderer subtype.
   VisRenderer *uniform renderer = (VisRenderer *uniform) pointer;
 
@@ -613,17 +958,30 @@ void VisRenderer_renderSample(Renderer *uniform pointer, varying ScreenSample &s
 
   //! Provide the renderer to the intersector as it contains all volumes, geometries, etc.
   vec4f color = make_vec4f(0.0f);
-  VisRenderer_intersect(renderer, sample.ray, rayOffset, color, n_continuation_rays, continuation_rays);
 
-  //! Gamma correction.
-  color = renderer->model->volumes[0]->gammaCorrection.x * pow(color, renderer->model->volumes[0]->gammaCorrection.y);
+	// Intersect will return true if the ray resulted in something that needs to be added into the
+  // frame buffer.   If the ray terminated in the current partition it will.
+  // If it continued pass into the next partition, it won't. Note: we've moved the gamma correnction
+	// and the merging of the background until the end of the whole raycasting process (since we won't
+	// know the final opacity and color till then).
 
-  //! Attenuate the foreground and background colors by the opacity.
-  color = color.w * color + (1.0f - color.w) * background;
-
-  //! Store the result in the sample.
-  sample.rgb.x = color.x;  sample.rgb.y = color.y;  sample.rgb.z = color.z;  sample.alpha = color.w;
+  if (VisRenderer_intersect(renderer, sample, rayOffset, color, n_continuation_rays, continuation_rays))
+	{
+		sample.rgb.x = color.x;
+		sample.rgb.y = color.y;
+		sample.rgb.z = color.z;
+		sample.alpha = color.w;
+	}
+	else
+	{
+		sample.rgb.x = 0.0;
+		sample.rgb.y = 0.0;
+		sample.rgb.z = 0.0;
+		sample.alpha = 0.0;
+	}
 }
+
+//=======================================================
 
 export void VisRenderer_setCamera(void *uniform pointer, 
                                             void *uniform camera) 
@@ -700,6 +1058,71 @@ export void VisRenderer_setSlices(void *uniform pointer,
     visRenderer->sliceClips = NULL;
     visRenderer->sliceVisibility = NULL;
   }
+}
+
+//! This function intersects the volume and geometries.
+bool VisRenderer_AO_intersect(uniform Renderer *uniform pointer, varying ScreenSample &screenSample)
+{
+  VisRenderer *uniform renderer = (VisRenderer *uniform) pointer;
+	varying Ray &ray = screenSample.ray;
+
+  //! Bounding box of the volume.
+  const uniform box3f boundingBox = renderer->model->volumes[0]->boundingBox;
+
+  //! Ray epsilon.
+  const uniform float epsilon = 1e-4 * distance(boundingBox.lower, boundingBox.upper);
+
+  //! Compute the intersection interval over the ray and volume bounds.
+  VisRenderer_AO_intersectBox(boundingBox, ray);
+
+	// If the exit point is in front of the entry point (say, what?) or the ray hits a clipping before the 
+	// volume itself, quit.   This is a ray termination.
+#if 1
+  if (ray.t0 > ray.t1)
+    return true;
+#endif
+
+  const float tMax = ray.t1;
+
+  //! Offset ray by a fraction of the nominal ray step.
+  const uniform float step = renderer->model->volumes[0]->samplingStep / renderer->model->volumes[0]->samplingRate;
+  ray.t += 0.01 * step;
+
+  //! Copy of the ray for volume isosurface intersection. The original ray is used for volume intersection.
+  Ray isosurfaceRay = ray;
+  isosurfaceRay.t = ray.t0 + 0.01 * renderer->model->volumes[0]->samplingStep; // don't consider sampling rate, but still allow offset.
+  VisRenderer_intersectIsosurface(renderer, renderer->model->volumes[0], isosurfaceRay);
+	if (isosurfaceRay.t < 10)
+	{
+		print("i");
+		return true;
+	}
+
+#if 0
+  //! Copy of the ray for geometry intersection.
+  Ray geometryRay = isosurfaceRay;
+  geometryRay.t = tMax; //! end of valid ray interval for traceRay().
+  VisRenderer_intersectGeometry(renderer, geometryRay);
+	if (geometryRay.t < 10)
+	{
+		print("g");
+		return true;
+	}
+#endif
+
+  //! Copy of the ray for slice intersection.
+  Ray sliceRay = isosurfaceRay;
+  sliceRay.t = ray.t0;
+  VisRenderer_intersectVisibleSlice(renderer, renderer->model->volumes[0], sliceRay);
+	if (sliceRay.t < 10)
+	{
+#if 0
+		print("s");
+#endif
+    return true;
+	}
+
+	return false;
 }
 
 export void *uniform VisRenderer_createInstance()
