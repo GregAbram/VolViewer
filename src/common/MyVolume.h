@@ -134,7 +134,8 @@ private:
 				float *ptr = (float *)v;
 				m = *ptr;
 				M = *ptr;
-				for (int i = 0; i < x*y*z; i++, ptr++)
+				size_t n = ((size_t)x)*((size_t)y)*((size_t)z);
+				for (size_t i = 0; i < n; i++, ptr++)
 				{
 					if (m > *ptr) m = *ptr;
 					if (M < *ptr) M = *ptr;
@@ -145,7 +146,8 @@ private:
 				unsigned char *ptr = (unsigned char *)v;
 				m = *ptr;
 				M = *ptr;
-				for (int i = 0; i < x*y*z; i++, ptr++)
+				size_t n = ((size_t)x)*((size_t)y)*((size_t)z);
+				for (size_t i = 0; i < n; i++, ptr++)
 				{
 					if (m > *ptr) m = *ptr;
 					if (M < *ptr) M = *ptr;

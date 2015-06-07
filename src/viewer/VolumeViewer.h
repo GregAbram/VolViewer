@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 
+#include "RenderProperties.h"
 #include "TransferFunctionEditor.h"
 #include "SlicesEditor.h"
 #include "IsosEditor.h"
@@ -59,6 +60,8 @@ class VolumeViewer : public QMainWindow {
   void importFromFile(const std::string &filename);
 
 	void loadState(std::string statename);
+
+	RenderProperties *getRenderProperties() { return &renderProperties; }
 
 public slots:
 
@@ -109,6 +112,9 @@ protected:
 
   //! Create and configure the user interface widgets and callbacks.
   void initUserInterfaceWidgets();
+
+  //! The transfer function editor.
+  RenderProperties renderProperties;
 
 };
 

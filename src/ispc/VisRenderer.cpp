@@ -71,18 +71,14 @@ namespace ospray {
     else
       ispc::VisRenderer_setSlices(ispcEquivalent, 0, NULL, NULL, NULL);
 
-		t = getParamData("AO number", NULL);
-		if (t)
-			ispc::VisRenderer_set_AO_number(ispcEquivalent, *(int *)t->data);
-		else
-			ispc::VisRenderer_set_AO_number(ispcEquivalent, 0);
+		int num = getParam1i("AO number", 0);
+		ispc::VisRenderer_set_AO_number(ispcEquivalent, num);
 
+		float rad = getParam1f("AO radius", 0.0);
+		ispc::VisRenderer_set_AO_radius(ispcEquivalent, rad);
 
-		t = getParamData("AO radius", NULL);
-		if (t)
-			ispc::VisRenderer_set_AO_number(ispcEquivalent, *(float *)t->data);
-		else
-			ispc::VisRenderer_set_AO_number(ispcEquivalent, 1.0);
+		float amb = getParam1f("ambient", 0.5);
+		ispc::VisRenderer_set_ambient(ispcEquivalent, amb);
 
     //! Initialize state in the parent class, must be called after the ISPC object is created.
     Renderer::commit();

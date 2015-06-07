@@ -44,6 +44,7 @@ struct VisRenderer {
 
 	uniform	int			numAO;
 	uniform float		AOradius;
+	uniform float		ambient;
 };
 
 void VisRenderer_renderFramePostamble(Renderer *uniform renderer, 

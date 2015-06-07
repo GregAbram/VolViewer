@@ -34,6 +34,8 @@ VolumeViewer::VolumeViewer(bool showFrameRate)
   renderer = ospNewRenderer("vis_renderer");  exitOnCondition(renderer == NULL, "could not create OSPRay renderer object");
 	getTransferFunctionEditor().setRenderer(renderer);
 
+	renderProperties.setRenderer(renderer);
+
   //! Create an OSPRay window and set it as the central widget, but don't let it start rendering until we're done with setup.
   osprayWindow = new QOSPRayWindow(this, renderer, showFrameRate);  setCentralWidget(osprayWindow);
 
@@ -143,6 +145,12 @@ void VolumeViewer::loadState(std::string statename)
 		return;
 	}
 
+	if (doc["State"].HasMember("Render Properties") )
+	{
+		getRenderProperties()->loadState(doc["State"]["Render Properties"]);
+		getRenderProperties()->commit();
+	}
+
 	if (doc["State"].HasMember("Camera") )
 	{
 		getWindow()->loadState(doc["State"]["Camera"]);
@@ -198,6 +206,8 @@ void VolumeViewer::saveState()
 	state.AddMember("Volume", Value().SetString(volumeName.c_str(), doc.GetAllocator()), doc.GetAllocator());
 
 	getWindow()->saveState(doc, state);
+	getRenderProperties()->saveState(doc, state);
+
 	getLights().saveState(doc, state);
 	getTransferFunctionEditor().saveState(doc, state);
 	getSlicesEditor().saveState(doc, state);
@@ -246,6 +256,12 @@ void VolumeViewer::initUserInterfaceWidgets() {
 	connect(saveStateAct, SIGNAL(triggered()), this, SLOT(saveState()));
 
   //! Create the transfer function editor dock widget, this widget modifies the transfer function directly.
+  QDockWidget *renderPropertiesDockWidget = new QDockWidget("Render Properties", this);
+  renderPropertiesDockWidget->setWidget(&renderProperties);
+  addDockWidget(Qt::LeftDockWidgetArea, renderPropertiesDockWidget);
+	connect(&renderProperties, SIGNAL(renderPropertiesChanged()), this, SLOT(render()));
+
+  //! Create the transfer function editor dock widget, this widget modifies the transfer function directly.
   QDockWidget *transferFunctionEditorDockWidget = new QDockWidget("Transfer Function Editor", this);
   transferFunctionEditorDockWidget->setWidget(&transferFunctionEditor);
   connect(&transferFunctionEditor, SIGNAL(transferFunctionChanged()), this, SLOT(commitVolume()));
@@ -266,5 +282,6 @@ void VolumeViewer::initUserInterfaceWidgets() {
 	connect(&isosEditor, SIGNAL(isosChanged()), this, SLOT(commitIsos()));
   addDockWidget(Qt::LeftDockWidgetArea, isosEditorDockWidget);
   isosEditor.setMaximumHeight(isosEditor.minimumSize().height());
+
 
 }

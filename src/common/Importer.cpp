@@ -10,7 +10,7 @@ using namespace std;
 
 void importVolume(MyVolume& mv, const std::string &filename, TransferFunction& tf)
 {
-	int x, y, z;
+	size_t x, y, z;
 	std::string type;
 	char rfile[256];
 
