@@ -60,6 +60,7 @@ RenderPropertiesEditor::RenderPropertiesEditor()
 
 	connect(&ao_radius_slider, SIGNAL(sliderMoved(int)), this, SLOT(AORadiusSliderChanged(int)));
 	connect(&ao_radius_current, SIGNAL(returnPressed()), this, SLOT(AORadiusTextChanged()));
+	connect(&ao_radius_max, SIGNAL(returnPressed()), this, SLOT(AORadiusTextChanged()));
 }
 
 float 
@@ -157,8 +158,8 @@ void
 RenderPropertiesEditor::AORadiusSliderChanged(int k)
 {
 	int r = atoi(ao_radius_max.text().toStdString().c_str());
-	renderProperties.setAORadius(r);
 	float v = (k/100.0) * r;
+	renderProperties.setAORadius(v);
 	ao_radius_current.setText(QString::number(v));
 	commit();
 }

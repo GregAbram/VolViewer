@@ -1,6 +1,3 @@
-#define GDA 0
-#define GDA1 0
-#define GDA2 0
 #define AO_RAYS_PER_PIXEL	640
 
 // ======================================================================== //
@@ -99,22 +96,7 @@ void generateAORays(VisRenderer *uniform renderer, ScreenSample sample, vec3f am
 {
 	if (renderer->numAO > 0)
 	{
-#if GDA
-		print("GAOR\norg:\nX %\nY %\nZ %\ndir:\nX %\nY %\nZ %\nt %\n",
-				sample.ray.org.x,
-				sample.ray.org.y,
-				sample.ray.org.z,
-				sample.ray.dir.x,
-				sample.ray.dir.y,
-				sample.ray.dir.z,
-				sample.ray.t);
-		print("AC\nR %\nG %\nB %\n", ambientColor.x, ambientColor.y, ambientColor.z);
-#endif
-
 		ambientColor = (1.0 / renderer->numAO) * ambientColor;
-#if GDA2
-		print("AC2\nR %\nG %\nB %\n", ambientColor.x, ambientColor.y, ambientColor.z);
-#endif
 
 		vec3f b0, b1;
 		VisRenderer_getBinormals(b0, b1, sample.ray.dir);
@@ -124,20 +106,8 @@ void generateAORays(VisRenderer *uniform renderer, ScreenSample sample, vec3f am
 			if (n_continuation_rays >= AO_RAYS_PER_PIXEL)
 				break;
 
-#if 0
-			int j = i % 0xff;
-			const float r0 = VisRenderer_randomU[j];
-			const float r1 = VisRenderer_randomV[j];
-
-			const float w = sqrt(1.f-r1);
-			const float x = cos((2.f*M_PI)*r0)*w;
-			const float y = sin((2.f*M_PI)*r0)*w;
-			const float z = sqrt(r1)+epsilon;
-			vec3f d = x*b0+y*b1+z*sample.ray.dir;
-#else
 			int r = (sample.sampleID.x * 9949 + sample.sampleID.y * 9613 + i * 9151) & 0xff;
 			vec3f d = getRandomDir(r, b0, b1, sample.ray.dir, 0.001); //renderer->inherited.epsilon);
-#endif
 
 			continuation_rays[n_continuation_rays].sample.sampleID = sample.sampleID;
 			continuation_rays[n_continuation_rays].sample.ray.org  = sample.ray.org;
@@ -201,10 +171,6 @@ vec3f VisRenderer_computeTotalLambertianIntensity(VisRenderer *uniform renderer,
 
 void VisRenderer_renderTile(uniform Renderer *uniform self, uniform Tile &tile)
 {
-#if GDA1
-	print("====================================\n");
-#endif
-
   uniform FrameBuffer *uniform fb     = self->fb;
   uniform Camera      *uniform camera = self->camera;
 
@@ -255,40 +221,24 @@ void VisRenderer_renderTile(uniform Renderer *uniform self, uniform Tile &tile)
 		}
 
 		int k = 0;
-#if GDA3
-		if (n_continuation_rays[programIndex])
-			print("\nPIXEL % %\n", pixel, n_continuation_rays[programIndex]);
-#endif
 		for (uint32 j = 0; j <  n_continuation_rays[programIndex]; j++)
 		{
 			if (continuation_rays[AO_RAYS_PER_PIXEL*programIndex + j].type == AO)
 			{
 				ScreenSample s = continuation_rays[AO_RAYS_PER_PIXEL*programIndex + j].sample;
-#if 0
-				addRGBAZ(tile, pixel, s.rgb, 0.0, 0.0);
-#else
+
 				s.ray.t0 = 1e-6f;
 				s.ray.t  = infinity;
 				if (! VisRenderer_AO_intersect(self,  s))
 				{
 					addRGBAZ(tile, pixel, s.rgb, 0.0, 0.0);
 					k = k + 1;
-#if GDA3
-					print("n");
-#endif
 				}
 				else
 				{
-#if GDA3
-					print("y");
-#endif
 				}
-#endif
 			}
 		}
-#if GDA3
-		print("K %\n", k);
-#endif
   }
 }
 
@@ -363,31 +313,15 @@ inline void VisRenderer_intersectVisibleSlice(VisRenderer *uniform renderer, Vol
 	float t,  nearest_t = infinity;
 	int ni = -1;
 
-#if GDA1
-	print("\nIVS \nOX %\nOY %\nOZ %\nDX %\nDY %\nDZ %\n",
-			ray.org.x, ray.org.y, ray.org.z,
-			ray.dir.x, ray.dir.y, ray.dir.z);
-#endif
-
   for (int i = 0; i < renderer->sliceCount; i++)
   {
-#if GDA1
-			print("==== slice %\nSA %\nSB %\nSC %\nSD %\n", i, renderer->slicenorms[i].x, renderer->slicenorms[i].y, renderer->slicenorms[i].z, renderer->sliceds[i]);
-#endif
-		
 		if (renderer->sliceVisibility[i] == 1)
 		{
 			float d = dot(ray.dir, renderer->slicenorms[i]);
-#if GDA1
-			print("D %\n", d);
-#endif
 
 			if (d != 0.0)
 			{
 				float t = -(dot(ray.org, renderer->slicenorms[i]) + renderer->sliceds[i]) / d;
-#if GDA1
-				print("T %\n", t);
-#endif
 				if (t > 0)
 				{
 					if (t < nearest_t)
@@ -396,26 +330,11 @@ inline void VisRenderer_intersectVisibleSlice(VisRenderer *uniform renderer, Vol
 						ni = i;
 					}
 				}
-#if GDA1
-				else
-					print("t: %\n", t);
-#endif
 			}
-#if GDA1
-			else
-				print("d: %\n", d);
-#endif
 		}
-#if GDA1
-			else
-				print("NOT VISIBLE\n");
-#endif
 	}
 
 	ray.t = nearest_t;
-#if GDA1
-	print("NT %\nI %\n", nearest_t, ni);
-#endif
 }
 
 inline void VisRenderer_computeSliceSample(VisRenderer *uniform renderer,
@@ -533,13 +452,9 @@ inline void VisRenderer_computeVolumeSample(VisRenderer *uniform renderer,
 
 inline void VisRenderer_intersectIsosurface(VisRenderer *uniform renderer, Volume *uniform volume, varying Ray &ray)
 {
-	print("VisRenderer_intersectIsosurface % % %\n", ray.t0, ray.t1, ray.t);
   //! Terminate if there are no isovalues.
   if (volume->numIsovalues == 0) {
     ray.t = infinity;
-#if GDA3
- 		print("X0\n");
-#endif
     return;
   }
 
@@ -547,9 +462,6 @@ inline void VisRenderer_intersectIsosurface(VisRenderer *uniform renderer, Volum
   volume->intersectIsosurface(volume, volume->isovalues, volume->numIsovalues, ray); 
 	if (ray.t > ray.t1)
 	{
-#if GDA3
- 		print("X1 % %\n", ray.t, ray.t1);
-#endif
 		return;
 	}
 
@@ -564,9 +476,6 @@ inline void VisRenderer_intersectIsosurface(VisRenderer *uniform renderer, Volum
     volume->intersectIsosurface(volume, volume->isovalues, volume->numIsovalues, ray);  
 		if (ray.t > ray.t1) 
 		{
-#if GDA3
-			print("X2 % %\n", ray.t, ray.t1);
-#endif
 			return;
 		}
 
@@ -601,9 +510,6 @@ inline void VisRenderer_intersectIsosurface(VisRenderer *uniform renderer, Volum
     sample0 = sample;
   }
 
-#if GDA3
-  print("X3\n");
-#endif
 }
 
 inline void VisRenderer_computeIsosurfaceSample(VisRenderer *uniform renderer,
@@ -674,13 +580,6 @@ inline void VisRenderer_computeIsosurfaceSample(VisRenderer *uniform renderer,
 
 			vec3f t = (1.f - renderer->ambient) * opacity * sampleColor * VisRenderer_computeTotalLambertianIntensity(renderer, coordinates, normal);
 			lambertianColor = make_vec4f(t.x, t.y, t.z, opacity);
-
-#if GDA3
-			print("I:\nA %\nNX %\nNY %\nNZ %\nAX %\nAY %\nAZ %\nLX %\nLY %\nLZ %\n", renderer->ambient, 
-						normal.x, normal.y, normal.z,
-						ambientColor.x, ambientColor.y, ambientColor.z,
-						lambertianColor.x, lambertianColor.y, lambertianColor.z);
-#endif
 
       ray.t = tHit;
       return;
@@ -799,27 +698,6 @@ inline void VisRenderer_AO_intersectBox(const uniform box3f &box,
   //! Distance along the ray to the entry point.
   ray.t0 = 0.0;
   ray.t1 = max(max(ray.t0, min(minimum.x, maximum.x)), max(min(minimum.y, maximum.y), min(minimum.z, maximum.z)));
-
-#if 0
-	if (ray.t1 < 0)
-	{
-	print("AOIB\nlower\nx %\ny %\nz %\nupper\nx %\ny %\nz %\norg\nx %\ny %\nz %\ndir\nx %\ny %\nz %\n",
-			box.lower.x, box.lower.y, box.lower.z,
-			box.upper.x, box.upper.y, box.upper.z,
-			ray.org.x, ray.org.y, ray.org.z,
-			ray.dir.x, ray.dir.y, ray.dir.z);
-	print("min:\nX %\nY %\nZ %\n", minimum.x, minimum.y, minimum.z);
-	print("max:\nX %\nY %\nZ %\n", maximum.x, maximum.y, maximum.z);
-	print("T0 %\nT1 %\n", ray.t0, ray.t1);
-	}
-#endif
-#if 0
-	print("AOIB\norg\nx %\ny %\nz %\ndir\nx %\ny %\nz %\n",
-			ray.org.x, ray.org.y, ray.org.z,
-			ray.dir.x, ray.dir.y, ray.dir.z);
-	print("T0 %\nT1 %\n", ray.t0, ray.t1);
-	}
-#endif
 }
 
 //==================================================
@@ -900,16 +778,9 @@ inline bool VisRenderer_intersect(uniform VisRenderer *uniform renderer,
   //! Initial trace through the volume and geometries.
   VisRenderer_computeVolumeSample(renderer, renderer->model->volumes[0], ray, volumeColor);
   VisRenderer_computeIsosurfaceSample(renderer, renderer->model->volumes[0], isosurfaceRay, isosurfaceAmbient, isosurfaceLambertian, isosurfaceNormal);
-#if GDA
-	print("CIS\nR %\nG %\nB%\n", isosurfaceAmbient.x, isosurfaceAmbient.y, isosurfaceAmbient.z);
-#endif
 
   VisRenderer_computeGeometrySample(renderer, geometryRay, geometryColor);
   VisRenderer_computeSliceSample(renderer, renderer->model->volumes[0], sliceRay, sliceAmbient, sliceLambertian, slicesThatHaveBeenHit, sliceThatWasHit);
-#if 0
-	print("CSS\nAR %\nAG %\nAB%\n", sliceAmbient.x, sliceAmbient.y, sliceAmbient.z);
-	print("LR %\nLG %\nLB %\n", sliceLambertian.x, sliceLambertian.y, sliceLambertian.z);
-#endif
 
   //! Trace the ray through the volume and geometries.
   float firstHit;
@@ -931,10 +802,6 @@ inline bool VisRenderer_intersect(uniform VisRenderer *uniform renderer,
 // TODO - hey I think this skips the last interval of volume in front of surfaces!
 
     else if (firstHit == isosurfaceRay.t) {
-
-#if GDA3
-			print("HI\n");
-#endif
 
       color = color + (1.0f - color.w) * isosurfaceLambertian;
 
@@ -967,9 +834,6 @@ inline bool VisRenderer_intersect(uniform VisRenderer *uniform renderer,
       color = color + (1.0f - color.w) * geometryColor;
 			if (min(min(color.x, color.y), color.z) >= 1.0f || color.w >= 0.99f)
 			{
-#if GDA
-				print("g");
-#endif
 				// This is a termination.
 				return true;
 			}
@@ -986,9 +850,6 @@ inline bool VisRenderer_intersect(uniform VisRenderer *uniform renderer,
     }
     else if (firstHit == sliceRay.t) {
 
-#if GDA3
-			print("HS\n");
-#endif
       color = color + (1.0f - color.w) * sliceLambertian;
 
 			screenSample.ray.t = sliceRay.t;
@@ -1001,9 +862,6 @@ inline bool VisRenderer_intersect(uniform VisRenderer *uniform renderer,
 
 			if (min(min(color.x, color.y), color.z) >= 1.0f || color.w >= 0.99f)
 			{
-#if GDA
-				print("s");
-#endif
 				// This is a termination.
 				return true;
 			}
@@ -1021,11 +879,6 @@ inline bool VisRenderer_intersect(uniform VisRenderer *uniform renderer,
 
 	if (firstHit >= tMax)
 	{
-#if GDA
-		print("x firstHit %\n", firstHit);
-		print("x tMax %\n", tMax);
-#endif
-
 		// This will be the continuation of a primary ray.
 
 		continuation_rays[n_continuation_rays].sample.sampleID = screenSample.sampleID;
@@ -1195,9 +1048,6 @@ export void VisRenderer_setSlices(void *uniform pointer,
 //! This function intersects the volume and geometries.
 bool VisRenderer_AO_intersect(uniform Renderer *uniform pointer, varying ScreenSample &screenSample)
 {
-#if GDA3
-	print ("AO INTERSECT\n");
-#endif
   VisRenderer *uniform renderer = (VisRenderer *uniform) pointer;
 	varying Ray &ray = screenSample.ray;
 
@@ -1227,16 +1077,12 @@ bool VisRenderer_AO_intersect(uniform Renderer *uniform pointer, varying ScreenS
   //! Copy of the ray for volume isosurface intersection. The original ray is used for volume intersection.
   Ray isosurfaceRay = ray;
 	isosurfaceRay.t1 = renderer->AOradius;
-#if GDA3
+
   VisRenderer_intersectIsosurface(renderer, renderer->model->volumes[0], isosurfaceRay);
 	if (isosurfaceRay.t < renderer->AOradius)
 	{
-#if GDA3
-		print("i %\n", isosurfaceRay.t);
-#endif
 		return true;
 	}
-#endif
 
 #if 0
   //! Copy of the ray for geometry intersection.
@@ -1256,9 +1102,6 @@ bool VisRenderer_AO_intersect(uniform Renderer *uniform pointer, varying ScreenS
   VisRenderer_intersectVisibleSlice(renderer, renderer->model->volumes[0], sliceRay);
 	if (sliceRay.t < renderer->AOradius)
 	{
-#if GDA1
-		print("s %\n", sliceRay.t);
-#endif
     return true;
 	}
 
