@@ -139,6 +139,12 @@ void VolumeViewer::loadState(std::string statename)
   doc.Parse(xyzzy);
 	in.close();
 
+	if ((! doc.IsObject()) || (! doc.HasMember("State")))
+	{
+		std::cerr << "invalid state file\n";
+		return;
+	}
+
 	if (! doc["State"].HasMember("Volume"))
 	{
     std::cerr << "no volume?\n";

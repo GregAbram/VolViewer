@@ -1,10 +1,6 @@
-#define AMBIENT 0.9f
 #define GDA 0
 #define GDA1 0
 #define GDA2 0
-#define GDA3 1
-#define NAO 16
-#define AO_RADIUS 100
 #define AO_RAYS_PER_PIXEL	640
 
 // ======================================================================== //

@@ -61,7 +61,7 @@ SET(SRCS ${SRCS}
   VolumeViewer.cpp
 	SlicesEditor.cpp
 	IsosEditor.cpp
-	RenderProperties.cpp
+	RenderPropertiesEditor.cpp
   )
 
 SET(MOC_HEADERS
@@ -69,7 +69,7 @@ SET(MOC_HEADERS
   TransferFunctionEditor.h
 	SlicesEditor.h
 	IsosEditor.h
-	RenderProperties.h
+	RenderPropertiesEditor.h
   VolumeViewer.h
   )
 
