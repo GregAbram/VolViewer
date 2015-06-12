@@ -78,6 +78,7 @@ public:
 
 		center = pos + dir; 
 		eye_dist = length(dir); 
+		std::cerr << "EyeDist: " << eye_dist << " in setPos\n";
 		eye_dir = osp::vec3f(-dir.x / eye_dist, -dir.y / eye_dist, -dir.z / eye_dist);
 
 		modified = true;
@@ -91,6 +92,7 @@ public:
 
 		center = pos + dir; 
 		eye_dist = length(dir); 
+		std::cerr << "EyeDist: " << eye_dist << " in setDir\n";
 		eye_dir = osp::vec3f(-dir.x / eye_dist, -dir.y / eye_dist, -dir.z / eye_dist);
 
 		modified = true;
@@ -205,6 +207,7 @@ public:
 		if (modified)
 		{
 			osp::vec3f e = getPos(), d = getDir();
+std::cerr << "DIST: " << eye_dist << "\n";
 
 			ospSetVec3f(ospCamera,"pos", e);
 			ospSetVec3f(ospCamera,"dir", d);

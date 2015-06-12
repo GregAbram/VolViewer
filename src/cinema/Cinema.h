@@ -87,7 +87,7 @@ public:
 	}
 
 private:
-	int axis;
+	vector<int> axes;
 	vector<int> clip;
 	vector<int> visible;
 	vector<int> flip;

@@ -10,6 +10,7 @@
 #include "ColorMap.h"
 #include "Slices.h"
 #include "Isos.h"
+#include "RenderProperties.h"
 
 #include "MyVolume.h"
 
@@ -61,6 +62,7 @@ private:
 	Slices					 	slices;
 	Isos							isos;
 	ColorMap					colorMap;
+	RenderProperties  renderProperties;
 
 	OSPRenderer renderer;
 	MyVolume volume;

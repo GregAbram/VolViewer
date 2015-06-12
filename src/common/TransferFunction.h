@@ -99,7 +99,6 @@ public:
 			interpolated.push_back(scale * (alphas[i0].y + d*(alphas[i1].y - alphas[i0].y)));
 		}
 
-
 		OSPData oAlphas = ospNewData(interpolated.size(), OSP_FLOAT, interpolated.data());
 		ospSetData(tf, "opacities", oAlphas);
 

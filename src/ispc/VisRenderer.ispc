@@ -499,12 +499,9 @@ inline void VisRenderer_intersectIsosurface(VisRenderer *uniform renderer, Volum
 
     if (tHit <= ray.t1)
 		{
-			print("AO Y %\n", tHit);
 			ray.t = tHit;
       return;
     }
-		else
-			print("AO N %\n", tHit);
 
     t0 = t;
     sample0 = sample;
@@ -897,7 +894,6 @@ inline bool VisRenderer_intersect(uniform VisRenderer *uniform renderer,
 	{
 		// Broke out due to opacity - volume accumulation, I guess
 		return true;
-		print("y");
 	}
 }
 
