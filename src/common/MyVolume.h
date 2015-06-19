@@ -129,6 +129,7 @@ private:
 
 		void _setMinMax(void *v)
 		{
+			printf("here\n");
 			if (type == "float")
 			{
 				float *ptr = (float *)v;
@@ -140,6 +141,7 @@ private:
 					if (m > *ptr) m = *ptr;
 					if (M < *ptr) M = *ptr;
 				}
+				printf("MM %f %f\n", m, M);
 			}
 			else
 			{

@@ -48,17 +48,23 @@ public slots:
   void saveState(Document&, Value&);
   void loadColorMap();
 
+	void setRange(float min, float max);
+
 protected slots:
 
   void alphaWidgetChanged();
   void modifiedTransferFunction();
   void setColorMapIndex(int index);
+  void rangeMinChanged();
+  void rangeMaxChanged();
 
 protected:
 
   void loadColorMapFile(std::string);
   void addColorMap(VColorMap);
   void loadOpacityMapFile(std::string);
+
+	void _setRange(float min, float max);
 
   void loadColorMaps();
 
@@ -76,6 +82,8 @@ protected:
 
   //! Slider for scaling transfer function opacities.
   QSlider transferFunctionAlphaScalingSlider;
+
+	QLineEdit rangeMin, rangeMax;
 
 	OSPRenderer renderer;
 };

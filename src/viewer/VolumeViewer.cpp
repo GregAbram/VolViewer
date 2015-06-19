@@ -55,14 +55,14 @@ VolumeViewer::VolumeViewer(bool showFrameRate)
 
 void VolumeViewer::importFromFile(const std::string &filename) {
 
-  TransferFunction tf = getTransferFunctionEditor().getTransferFunction();
 
-	importVolume(volume, filename, tf);
+	importVolume(volume, filename, getTransferFunctionEditor().getTransferFunction());
 	volumeName = filename;
 
 	float min, max;
 	volume.GetMinMax(min, max);
 	isosEditor.setMinMax(min, max);
+	getTransferFunctionEditor().setRange(min, max);
 
   OSPModel model = ospNewModel();
 	ospAddVolume(model, volume.getOSPVolume());

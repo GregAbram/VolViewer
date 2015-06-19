@@ -36,7 +36,7 @@ void importVolume(MyVolume& mv, const std::string &filename, TransferFunction& t
 
 	void *data = (void *)new char[sz];
 
-	in.open((dir + rfile).c_str(), ios::binary | ios::in);
+	in.open(rfile[0] == '/' ? rfile : (dir + rfile).c_str(), ios::binary | ios::in);
 	in.read((char *)data, sz);
 	in.close();
 
