@@ -30,6 +30,8 @@ static std::string cmap_name(std::string name)
 
 TransferFunctionEditor::TransferFunctionEditor()
 {
+	renderer = NULL;
+
   //! Load color maps.
   loadColorMaps();
 

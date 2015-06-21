@@ -27,229 +27,56 @@ public:
 		modified = true;
   }
 
-	void setRenderer(OSPRenderer r)
-	{
-		renderer = r;
-		ospSetObject(renderer, "camera", ospCamera);
-	}
-
 	~Camera()
 	{
 		ospRelease(ospCamera);
 	}
 
+	void setRenderer(OSPRenderer r);
+	osp::vec3f getPos();
+	void getPos(float* p);
+	void getPos(osp::vec3f &p) ;
+	osp::vec3f getDir();
+	void getDir(float* d);
+	void getDir(osp::vec3f &d);
 
-	osp::vec3f getPos()  	{return center + eye_dist * xfmPoint(frame, eye_dir); }
-	void getPos(float* p) 
-	{
-		  osp::vec3f t;
-			getPos(t);
-			p[0] = t.x;
-			p[1] = t.y;
-			p[2] = t.z;
-	}
-	void getPos(osp::vec3f &p) 
-	{
-			p = getPos();
-	}
+	osp::vec3f getUp();
+	void getUp(float* u);
 
-	osp::vec3f getDir()  	{return -eye_dist * xfmPoint(frame, eye_dir); }
-	void getDir(float* d) 
-	{
-		  osp::vec3f t;
-			getDir(t);
-			d[0] = t.x;
-			d[1] = t.y;
-			d[2] = t.z;
-	}
-	void getDir(osp::vec3f &d)
-	{ 
-			d = getDir();
-	}
+	void setPos(float *p);
+	void setPos(osp::vec3f f);
+	void setPos(float x, float y, float z);
 
-	osp::vec3f getUp() 	{return up; } 
-	void getUp(float* u)  { u[0] = up.x;  u[1] = up.y;  u[2] = up.z; }
+	void setDir(float *p);
+	void setDir(osp::vec3f f);
+	void setDir(float x, float y, float z);
 
-	void setPos(float *p) { setPos(p[0], p[1], p[2]); }
-	void setPos(osp::vec3f f)  { setPos(f.x, f.y, f.z); }
-	void setPos(float x, float y, float z) 
-	{
-		pos = osp::vec3f(x, y, z); 
-
-		center = pos + dir; 
-		eye_dist = length(dir); 
-		std::cerr << "EyeDist: " << eye_dist << " in setPos\n";
-		eye_dir = osp::vec3f(-dir.x / eye_dist, -dir.y / eye_dist, -dir.z / eye_dist);
-
-		modified = true;
-  }
-
-	void setDir(float *p) { setDir(p[0], p[1], p[2]); }
-	void setDir(osp::vec3f f)  { setDir(f.x, f.y, f.z); }
-	void setDir(float x, float y, float z) 
-	{
-		dir = osp::vec3f(x, y, z); 
-
-		center = pos + dir; 
-		eye_dist = length(dir); 
-		std::cerr << "EyeDist: " << eye_dist << " in setDir\n";
-		eye_dir = osp::vec3f(-dir.x / eye_dist, -dir.y / eye_dist, -dir.z / eye_dist);
-
-		modified = true;
-  }
-
-	void setUp(float *p) { setUp(p[0], p[1], p[2]); }
-	void setUp(osp::vec3f f)  { setUp(f.x, f.y, f.z); }
-	void setUp(float x, float y, float z)  { up  = osp::vec3f(x, y, z); modified = true; }
+	void setUp(float *p);
+	void setUp(osp::vec3f f);
+	void setUp(float x, float y, float z);
 
 #define PI 3.1415926
 
-	void setPhi(int iphi)
-	{
-		phi = 0.99 * PI * (iphi/180.0);
-		setPhiTheta(theta, phi);
-	}
+	void setPhi(int iphi);
+	void setTheta(int itheta);
 
-	void setTheta(int itheta)
-	{
-		theta = PI * 2 * (itheta/360.0);
-		setPhiTheta(theta, phi);
-	}
+	float			 getFovY();
+	float			 getAspect();
 
-	float			 getFovY() 	{return fovY;  } void setFovY(float f)		  { fovY   = f; modified = true;}
-	float			 getAspect(){return aspect;} void setAspect(float a)	  { aspect = a; modified = true;}
+	void setFovY(float f);
+	void setAspect(float a);
 
-  /*! set frame 'up' vector. if this vector is (0,0,0) the window will
-   *not* apply the up-vector after camera manipulation */
-  void snapUp()
-  {
-    if(fabsf(dot(up,frame.l.vz)) < 1e-3f)
-      return;
+  void snapUp();
 
-    frame.l.vx = normalize(cross(frame.l.vy,up));
-    frame.l.vz = normalize(cross(frame.l.vx,frame.l.vy));
-    frame.l.vy = normalize(cross(frame.l.vz,frame.l.vx));
-		modified = true;
-  }
+	void saveState(Document &doc, Value &section);
+	void loadState(Value& cam);
 
-	void saveState(Document &doc, Value &section)
-	{
-		Value cam(kObjectType), s(kObjectType);
-		float v[3];
+	void commit();
 
-		getPos(v);
-		std::stringstream  p;
-		p << v[0] << " " << v[1] << " " << v[2];
-		s.SetString(p.str().c_str(), doc.GetAllocator());
-		cam.AddMember("viewpoint", s, doc.GetAllocator());
-	
-		getDir(v);
-		std::stringstream  d;
-		d << v[0] << " " << v[1] << " " << v[2];
-		s.SetString(d.str().c_str(), doc.GetAllocator());
-		cam.AddMember("viewdir", s, doc.GetAllocator());
-
-		std::stringstream  u;
-		u << up[0] << " " << up[1] << " " << up[2];
-		s.SetString(u.str().c_str(), doc.GetAllocator());
-		cam.AddMember("viewup", s, doc.GetAllocator());
-	
-		std::stringstream  a;
-		a << aspect;
-		s.SetString(a.str().c_str(), doc.GetAllocator());
-		cam.AddMember("aspect", s, doc.GetAllocator());
-	
-		std::stringstream  f;
-		f << fovY;
-		s.SetString(f.str().c_str(), doc.GetAllocator());
-		cam.AddMember("fovy", s, doc.GetAllocator());
-
-		cameraLights.saveState(doc, cam);
-
-		section.AddMember("Camera", cam, doc.GetAllocator());
-	}
-
-	void loadState(Value& cam)
-	{
-		float v[3];
-
-		std::stringstream p;
-		p.str(cam["viewpoint"].GetString());
-		p >> v[0] >> v[1] >> v[2];
-		setPos(v);
-
-		std::stringstream d;
-		d.str(cam["viewdir"].GetString());
-		d >> v[0] >> v[1] >> v[2];
-		setDir(v);
-
-		std::stringstream u;
-		u.str(cam["viewup"].GetString());
-		u >> up[0] >> up[1] >> up[2];
-
-		std::stringstream a;
-		a.str(cam["aspect"].GetString());
-		a >> aspect;
-
-		std::stringstream f;
-		f.str(cam["fovy"].GetString());
-		f >> fovY;
-
-		if (cam.HasMember("Lights"))
-			cameraLights.loadState(cam["Lights"]);
-
-		modified = true;
-		commit();
-	}
-
-	void commit()
-	{
-		if (modified)
-		{
-			osp::vec3f e = getPos(), d = getDir();
-std::cerr << "DIST: " << eye_dist << "\n";
-
-			ospSetVec3f(ospCamera,"pos", e);
-			ospSetVec3f(ospCamera,"dir", d);
-			ospSetVec3f(ospCamera,"up",  up);
-			ospSetf(ospCamera,"aspect",  aspect);
-			ospSetf(ospCamera,"fovy",    fovY);
-			ospCommit(ospCamera);
-
-			cameraLights.commit(renderer, frame);
-
-			modified = false;
-		}
-	}
-
-	void rotateCenter(float t, float p)
-	{
-    frame = frame * osp::affine3f::rotate(osp::vec3f(0.0, 1.0, 0.0), -t) * osp::affine3f::rotate(osp::vec3f(1.0, 0.0, 0.0), p);
-		up 		= frame.l.vy;
-
-    snapUp();
-		modified = true;
-	}
-
-	void setPhiTheta(float t, float p)
-	{
-    frame = osp::affine3f::rotate(osp::vec3f(0.0, 1.0, 0.0), -t) * osp::affine3f::rotate(osp::vec3f(1.0, 0.0, 0.0), p);
-		up 		= frame.l.vy;
-
-    snapUp();
-		modified = true;
-	}
-
-	void zoom(float dy)
-	{
-		float motionSpeed = 0.012f;
-		eye_dist *= (1 + dy*motionSpeed);
-
-
-		modified = true;
-	}
-
-	Lights *getLights() { return &cameraLights; };
+	void rotateCenter(float t, float p);
+	void setPhiTheta(float t, float p);
+	void zoom(float dy);
+	Lights *getLights();
 
 private:
 	OSPCamera ospCamera;

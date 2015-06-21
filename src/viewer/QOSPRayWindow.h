@@ -43,6 +43,8 @@ public:
   Camera&         getCamera() { return camera; }
   OSPFrameBuffer& getFrameBuffer() { return frameBuffer; }
 
+	void Clear();
+
 	void commit() { getCamera().commit(); }
 
 protected:

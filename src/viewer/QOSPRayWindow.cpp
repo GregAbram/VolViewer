@@ -16,6 +16,7 @@
 
 
 #include "QOSPRayWindow.h"
+#include "QColor"
 
 #include <iostream>
 #include <fstream>
@@ -43,13 +44,19 @@ QOSPRayWindow::QOSPRayWindow(QMainWindow *parent,
 	camera.setRenderer(renderer);
 	camera.setPos(osp::vec3f(255.5, 255, 255.5));
 	camera.setDir(osp::vec3f(0.0, -1700.5, 0.0));
-	// camera.commit();
 }
 
 QOSPRayWindow::~QOSPRayWindow()
 {
   if(frameBuffer)
 		ospFreeFrameBuffer(frameBuffer);
+}
+
+void
+QOSPRayWindow::Clear()
+{
+	glClearColor(0.0, 0.0, 0.0, 1.0);
+	glClear(GL_COLOR_BUFFER_BIT);
 }
 
 void

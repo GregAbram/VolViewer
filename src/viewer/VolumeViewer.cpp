@@ -34,13 +34,11 @@ VolumeViewer::VolumeViewer(bool showFrameRate)
   renderer = ospNewRenderer("vis_renderer");  exitOnCondition(renderer == NULL, "could not create OSPRay renderer object");
 	getTransferFunctionEditor().setRenderer(renderer);
 
-	renderProperties.setRenderer(renderer);
+	renderPropertiesEditor.setRenderer(renderer);
 
   //! Create an OSPRay window and set it as the central widget, but don't let it start rendering until we're done with setup.
   osprayWindow = new QOSPRayWindow(this, renderer, showFrameRate);  setCentralWidget(osprayWindow);
 
-	// lights.commit(renderer);
-  
   //! Configure the user interface widgets and callbacks.
   initUserInterfaceWidgets();
 
@@ -51,6 +49,8 @@ VolumeViewer::VolumeViewer(bool showFrameRate)
 
   //! Show the window.
   show();
+	raise();
+	osprayWindow->Clear();
 }
 
 void VolumeViewer::importFromFile(const std::string &filename) {
@@ -122,6 +122,8 @@ void VolumeViewer::openState()
 		filename += ".state";
 
 	loadState(filename.toStdString());
+
+	// Not vert
 }
 
 static char xyzzy[10240];
@@ -161,12 +163,6 @@ void VolumeViewer::loadState(std::string statename)
 	{
 		getWindow()->loadState(doc["State"]["Camera"]);
 		getWindow()->commit();
-	}
-
-	if (doc["State"].HasMember("Lights"))
-	{
-		getLights().loadState(doc["State"]["Lights"]);
-		getLights().commit(renderer);
 	}
 
 	importFromFile(doc["State"]["Volume"].GetString());
@@ -214,7 +210,6 @@ void VolumeViewer::saveState()
 	getWindow()->saveState(doc, state);
 	getRenderProperties()->saveState(doc, state);
 
-	getLights().saveState(doc, state);
 	getTransferFunctionEditor().saveState(doc, state);
 	getSlicesEditor().saveState(doc, state);
 	getIsosEditor().saveState(doc, state);
@@ -229,6 +224,11 @@ void VolumeViewer::saveState()
 	out.open(filename.toStdString().c_str(), std::ofstream::out);
   out << sbuf.GetString() << "\n";
 	out.close();
+}
+
+void VolumeViewer::commitLights()
+{
+	printf("commitLights\n");
 }
 
 void VolumeViewer::commitSlices()
@@ -261,14 +261,14 @@ void VolumeViewer::initUserInterfaceWidgets() {
 	fileMenu->addAction(saveStateAct);
 	connect(saveStateAct, SIGNAL(triggered()), this, SLOT(saveState()));
 
-  //! Create the transfer function editor dock widget, this widget modifies the transfer function directly.
-  QDockWidget *renderPropertiesDockWidget = new QDockWidget("Render Properties", this);
-  renderPropertiesDockWidget->setWidget(&renderProperties);
-  addDockWidget(Qt::LeftDockWidgetArea, renderPropertiesDockWidget);
-	connect(&renderProperties, SIGNAL(renderPropertiesChanged()), this, SLOT(render()));
+  QDockWidget *renderPropertiesEditorDockWidget = new QDockWidget("Render Properties", this);
+	renderPropertiesEditorDockWidget->hide();
+  renderPropertiesEditorDockWidget->setWidget(&renderPropertiesEditor);
+  addDockWidget(Qt::LeftDockWidgetArea, renderPropertiesEditorDockWidget);
+	connect(&renderPropertiesEditor, SIGNAL(renderPropertiesChanged()), this, SLOT(render()));
 
-  //! Create the transfer function editor dock widget, this widget modifies the transfer function directly.
   QDockWidget *transferFunctionEditorDockWidget = new QDockWidget("Transfer Function Editor", this);
+	transferFunctionEditorDockWidget->hide();
   transferFunctionEditorDockWidget->setWidget(&transferFunctionEditor);
   connect(&transferFunctionEditor, SIGNAL(transferFunctionChanged()), this, SLOT(commitVolume()));
   connect(&transferFunctionEditor, SIGNAL(transferFunctionChanged()), this, SLOT(render()));
@@ -278,16 +278,39 @@ void VolumeViewer::initUserInterfaceWidgets() {
   transferFunctionEditor.setMaximumHeight(transferFunctionEditor.minimumSize().height());
 
 	QDockWidget *slicesEditorDockWidget = new QDockWidget("Slice Planes Editor", this);
+	slicesEditorDockWidget->hide();
 	slicesEditorDockWidget->setWidget(&slicesEditor);
 	connect(&slicesEditor, SIGNAL(slicesChanged()), this, SLOT(commitSlices()));
   addDockWidget(Qt::LeftDockWidgetArea, slicesEditorDockWidget);
   slicesEditor.setMaximumHeight(slicesEditor.minimumSize().height());
 
 	QDockWidget *isosEditorDockWidget = new QDockWidget("Isovalues Editor", this);
+	isosEditorDockWidget->hide();
 	isosEditorDockWidget->setWidget(&isosEditor);
 	connect(&isosEditor, SIGNAL(isosChanged()), this, SLOT(commitIsos()));
   addDockWidget(Qt::LeftDockWidgetArea, isosEditorDockWidget);
   isosEditor.setMaximumHeight(isosEditor.minimumSize().height());
 
+	QMenu *toolsMenu = menuBar()->addMenu(tr("&Tools"));
+	
+	QAction *renderPropertiesAction = new QAction(tr("Render Properties"), this);
+	toolsMenu->addAction(renderPropertiesAction);
+	connect(renderPropertiesAction, SIGNAL(triggered()), renderPropertiesEditorDockWidget, SLOT(show()));
+	
+	QAction *transferFunctionAction = new QAction(tr("Transfer Function"), this);
+	toolsMenu->addAction(transferFunctionAction);
+	connect(transferFunctionAction, SIGNAL(triggered()), transferFunctionEditorDockWidget, SLOT(show()));
+
+	QAction *slicesAction = new QAction(tr("Slices"), this);
+	toolsMenu->addAction(slicesAction);
+	connect(slicesAction, SIGNAL(triggered()), slicesEditorDockWidget, SLOT(show()));
+
+	QAction *isosAction = new QAction(tr("Isosurfaces"), this);
+	toolsMenu->addAction(isosAction);
+	connect(isosAction, SIGNAL(triggered()), isosEditorDockWidget, SLOT(show()));
+
+	QAction *lightsAction = new QAction(tr("Lights"), this);
+	toolsMenu->addAction(lightsAction);
+	connect(lightsAction, SIGNAL(triggered()), &lightSetEditor, SLOT(Open()));
 
 }

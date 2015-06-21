@@ -17,11 +17,11 @@
 #pragma once
 
 #include "QOSPRayWindow.h"
-#include "Lights.h"
 #include <QtGui>
 #include <string>
 #include <vector>
 
+#include "LightsEditor.h"
 #include "RenderPropertiesEditor.h"
 #include "TransferFunctionEditor.h"
 #include "SlicesEditor.h"
@@ -45,8 +45,6 @@ class VolumeViewer : public QMainWindow {
   //! Get the OSPRay output window.
   QOSPRayWindow *getWindow() { return(osprayWindow); }
 
-	Lights& getLights() { return lights; }
-
   //! Get the transfer function editor.
   TransferFunctionEditor &getTransferFunctionEditor() { return transferFunctionEditor; }
   SlicesEditor &getSlicesEditor() { return slicesEditor; }
@@ -61,7 +59,7 @@ class VolumeViewer : public QMainWindow {
 
 	void loadState(std::string statename);
 
-	RenderPropertiesEditor *getRenderProperties() { return &renderProperties; }
+	RenderPropertiesEditor *getRenderProperties() { return &renderPropertiesEditor; }
 
 public slots:
 
@@ -77,6 +75,7 @@ public slots:
 
 	void commitSlices();
 	void commitIsos();
+	void commitLights();
 
 protected:
 	std::string volumeName;
@@ -85,13 +84,13 @@ protected:
   //! OSPRay renderer.
   OSPRenderer renderer;
 
-	Lights lights;
-
   //! The OSPRay output window.
   QOSPRayWindow *osprayWindow;
 
   //! The transfer function editor.
   TransferFunctionEditor transferFunctionEditor;
+
+	LightSetEditor lightSetEditor;
 
 	//! The slices editor
   SlicesEditor slicesEditor;
@@ -114,7 +113,7 @@ protected:
   void initUserInterfaceWidgets();
 
   //! The transfer function editor.
-  RenderPropertiesEditor renderProperties;
+  RenderPropertiesEditor renderPropertiesEditor;
 
 };
 
