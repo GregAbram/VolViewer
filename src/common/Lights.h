@@ -1,5 +1,5 @@
 #pragma once
-// #include <ospray/lights/Light.h>
+
 #include <ospray/ospray.h>
 #include <iostream>
 #include <fstream>
@@ -35,7 +35,7 @@ public:
 
   Lights();
 
-	void addLight(float x, float y, float z, float r, float g, float b);
+	void addLight(osp::vec3f, osp::vec3f);
 	void commit(OSPRenderer r, osp::affine3f frame);
 	void commit(OSPRenderer r);
 	void loadState(Value &section);

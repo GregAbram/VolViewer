@@ -74,7 +74,6 @@ void VolumeViewer::importFromFile(const std::string &filename) {
 	ospSetObject(renderer, "dynamic_model", dmodel);
 
 	ospCommit(renderer);
-
 }
 
 void
@@ -98,11 +97,16 @@ VolumeViewer::openVolume()
 
 	int m = x > y ? x > z ? x : z : y > z ? y : z;
 
-	getWindow()->getCamera().setPos(x/2.0, y/2.0, -(3*m - z/2.0));
-	getWindow()->getCamera().setDir(0.0, 0.0, 3*m);
-	getWindow()->getCamera().commit();
+	osp::vec3f eye((x-1)/2.0, (y-1)/2.0, -(3*m - (z-1)/2.0));
+	osp::vec3f center((x-1)/2.0, (y-1)/2.0, (z-1)/2.0);
+	osp::vec3f up(0.0, 1.0, 0.0);
+
+	getWindow()->getCameraEditor()->setupFrame(eye, center, up);
+	getWindow()->getCameraEditor()->commit();
 
 	osprayWindow->setRenderingEnabled(true);
+	render();
+	render();
 	render();
 }
 
@@ -309,8 +313,7 @@ void VolumeViewer::initUserInterfaceWidgets() {
 	toolsMenu->addAction(isosAction);
 	connect(isosAction, SIGNAL(triggered()), isosEditorDockWidget, SLOT(show()));
 
-	QAction *lightsAction = new QAction(tr("Lights"), this);
-	toolsMenu->addAction(lightsAction);
-	connect(lightsAction, SIGNAL(triggered()), &lightSetEditor, SLOT(Open()));
-
+	QAction *cameraAction = new QAction(tr("Camera/Lights"), this);
+	toolsMenu->addAction(cameraAction);
+	connect(cameraAction, SIGNAL(triggered()), osprayWindow->getCameraEditor(), SLOT(Open()));
 }

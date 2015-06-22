@@ -24,6 +24,7 @@
 
 #include "../common/common.h"
 
+#include "CameraEditor.h"
 #include "Camera.h"
 
 class QOSPRayWindow : public QGLWidget
@@ -40,12 +41,13 @@ public:
   void setRotationRate(float rotationRate);
   void setBenchmarkParameters(int benchmarkWarmUpFrames, int benchmarkFrames);
 
-  Camera&         getCamera() { return camera; }
+  CameraEditor    *getCameraEditor() { return &cameraEditor; }
+
   OSPFrameBuffer& getFrameBuffer() { return frameBuffer; }
 
 	void Clear();
 
-	void commit() { getCamera().commit(); }
+	void commit() { cameraEditor.commit(); }
 
 protected:
 
@@ -89,5 +91,5 @@ protected:
   OSPFrameBuffer frameBuffer;
   OSPRenderer renderer;
 
-  Camera camera;
+	CameraEditor cameraEditor;
 };

@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 
-#include "LightsEditor.h"
+#include "CameraEditor.h"
 #include "RenderPropertiesEditor.h"
 #include "TransferFunctionEditor.h"
 #include "SlicesEditor.h"
@@ -90,7 +90,7 @@ protected:
   //! The transfer function editor.
   TransferFunctionEditor transferFunctionEditor;
 
-	LightSetEditor lightSetEditor;
+	CameraEditor cameraEditor;
 
 	//! The slices editor
   SlicesEditor slicesEditor;
@@ -114,6 +114,5 @@ protected:
 
   //! The transfer function editor.
   RenderPropertiesEditor renderPropertiesEditor;
-
 };
 
