@@ -48,6 +48,7 @@ public:
 	void Clear();
 
 	void commit() { cameraEditor.commit(); }
+	void render() { updateGL(); }
 
 protected:
 

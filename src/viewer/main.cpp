@@ -59,6 +59,7 @@ int main(int argc, char *argv[]) {
 
   //! Initialize Qt.
   QApplication *app = new QApplication(argc, argv);
+	app->setApplicationName(QString("VolViewer"));
 
   string volname("");
   string statename("");

@@ -3,15 +3,9 @@
 
 RenderPropertiesEditor::RenderPropertiesEditor()
 {
-	QVBoxLayout *vl = new QVBoxLayout();
-  vl->setSizeConstraint(QLayout::SetMinimumSize);
-  setLayout(vl);
-
-	QWidget *w = new QWidget();
-  QGridLayout *l = new QGridLayout();
-  w->setLayout(l);
-
-	vl->addWidget(w);
+	QGridLayout *l = new QGridLayout();
+  l->setSizeConstraint(QLayout::SetFixedSize);
+  setLayout(l);
 
 	l->addWidget(new QLabel("A/L ratio"), 0, 0, 1, 1);
 

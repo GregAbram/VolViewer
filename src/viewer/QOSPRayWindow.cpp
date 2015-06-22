@@ -40,6 +40,7 @@ QOSPRayWindow::QOSPRayWindow(QMainWindow *parent,
   this->renderer = renderer;
 	setFocusPolicy(Qt::StrongFocus);
 	cameraEditor.getCamera()->setRenderer(renderer);
+	cameraEditor.setWindow(this);
 }
 
 QOSPRayWindow::~QOSPRayWindow()
@@ -205,12 +206,12 @@ void QOSPRayWindow::keyPressEvent(QKeyEvent *event)
 {
 	if (event->text().toStdString()[0] == '+')
 	{
-			cameraEditor.zoom(5);
+			cameraEditor.zoom(-5);
 			updateGL();
 	}
 	else if (event->text().toStdString()[0] == '-')
 	{
-			cameraEditor.zoom(-5);
+			cameraEditor.zoom(5);
 			updateGL();
 	}
 }
