@@ -34,11 +34,11 @@ VolumeViewer::VolumeViewer(bool showFrameRate)
   renderer = ospNewRenderer("vis_renderer");  exitOnCondition(renderer == NULL, "could not create OSPRay renderer object");
 	getTransferFunctionEditor().setRenderer(renderer);
 
+	renderPropertiesEditor.setRenderer(renderer);
+
   //! Create an OSPRay window and set it as the central widget, but don't let it start rendering until we're done with setup.
   osprayWindow = new QOSPRayWindow(this, renderer, showFrameRate);  setCentralWidget(osprayWindow);
 
-	// lights.commit(renderer);
-  
   //! Configure the user interface widgets and callbacks.
   initUserInterfaceWidgets();
 
@@ -49,18 +49,20 @@ VolumeViewer::VolumeViewer(bool showFrameRate)
 
   //! Show the window.
   show();
+	raise();
+	osprayWindow->Clear();
 }
 
 void VolumeViewer::importFromFile(const std::string &filename) {
 
-  TransferFunction tf = getTransferFunctionEditor().getTransferFunction();
 
-	importVolume(volume, filename, tf);
+	importVolume(volume, filename, getTransferFunctionEditor().getTransferFunction());
 	volumeName = filename;
 
 	float min, max;
 	volume.GetMinMax(min, max);
 	isosEditor.setMinMax(min, max);
+	getTransferFunctionEditor().setRange(min, max);
 
   OSPModel model = ospNewModel();
 	ospAddVolume(model, volume.getOSPVolume());
@@ -72,7 +74,6 @@ void VolumeViewer::importFromFile(const std::string &filename) {
 	ospSetObject(renderer, "dynamic_model", dmodel);
 
 	ospCommit(renderer);
-
 }
 
 void
@@ -96,11 +97,16 @@ VolumeViewer::openVolume()
 
 	int m = x > y ? x > z ? x : z : y > z ? y : z;
 
-	getWindow()->getCamera().setPos(x/2.0, y/2.0, -(3*m - z/2.0));
-	getWindow()->getCamera().setDir(0.0, 0.0, 3*m);
-	getWindow()->getCamera().commit();
+	osp::vec3f eye((x-1)/2.0, (y-1)/2.0, -(3*m - (z-1)/2.0));
+	osp::vec3f center((x-1)/2.0, (y-1)/2.0, (z-1)/2.0);
+	osp::vec3f up(0.0, 1.0, 0.0);
+
+	getWindow()->getCameraEditor()->setupFrame(eye, center, up);
+	getWindow()->getCameraEditor()->commit();
 
 	osprayWindow->setRenderingEnabled(true);
+	render();
+	render();
 	render();
 }
 
@@ -120,6 +126,8 @@ void VolumeViewer::openState()
 		filename += ".state";
 
 	loadState(filename.toStdString());
+
+	// Not vert
 }
 
 static char xyzzy[10240];
@@ -137,22 +145,28 @@ void VolumeViewer::loadState(std::string statename)
   doc.Parse(xyzzy);
 	in.close();
 
+	if ((! doc.IsObject()) || (! doc.HasMember("State")))
+	{
+		std::cerr << "invalid state file\n";
+		return;
+	}
+
 	if (! doc["State"].HasMember("Volume"))
 	{
     std::cerr << "no volume?\n";
 		return;
 	}
 
+	if (doc["State"].HasMember("Render Properties") )
+	{
+		getRenderProperties()->loadState(doc["State"]["Render Properties"]);
+		getRenderProperties()->commit();
+	}
+
 	if (doc["State"].HasMember("Camera") )
 	{
 		getWindow()->loadState(doc["State"]["Camera"]);
 		getWindow()->commit();
-	}
-
-	if (doc["State"].HasMember("Lights"))
-	{
-		getLights().loadState(doc["State"]["Lights"]);
-		getLights().commit(renderer);
 	}
 
 	importFromFile(doc["State"]["Volume"].GetString());
@@ -198,7 +212,8 @@ void VolumeViewer::saveState()
 	state.AddMember("Volume", Value().SetString(volumeName.c_str(), doc.GetAllocator()), doc.GetAllocator());
 
 	getWindow()->saveState(doc, state);
-	getLights().saveState(doc, state);
+	getRenderProperties()->saveState(doc, state);
+
 	getTransferFunctionEditor().saveState(doc, state);
 	getSlicesEditor().saveState(doc, state);
 	getIsosEditor().saveState(doc, state);
@@ -213,6 +228,11 @@ void VolumeViewer::saveState()
 	out.open(filename.toStdString().c_str(), std::ofstream::out);
   out << sbuf.GetString() << "\n";
 	out.close();
+}
+
+void VolumeViewer::commitLights()
+{
+	printf("commitLights\n");
 }
 
 void VolumeViewer::commitSlices()
@@ -245,8 +265,14 @@ void VolumeViewer::initUserInterfaceWidgets() {
 	fileMenu->addAction(saveStateAct);
 	connect(saveStateAct, SIGNAL(triggered()), this, SLOT(saveState()));
 
-  //! Create the transfer function editor dock widget, this widget modifies the transfer function directly.
+  QDockWidget *renderPropertiesEditorDockWidget = new QDockWidget("Render Properties", this);
+	renderPropertiesEditorDockWidget->hide();
+  renderPropertiesEditorDockWidget->setWidget(&renderPropertiesEditor);
+  addDockWidget(Qt::LeftDockWidgetArea, renderPropertiesEditorDockWidget);
+	connect(&renderPropertiesEditor, SIGNAL(renderPropertiesChanged()), this, SLOT(render()));
+
   QDockWidget *transferFunctionEditorDockWidget = new QDockWidget("Transfer Function Editor", this);
+	transferFunctionEditorDockWidget->hide();
   transferFunctionEditorDockWidget->setWidget(&transferFunctionEditor);
   connect(&transferFunctionEditor, SIGNAL(transferFunctionChanged()), this, SLOT(commitVolume()));
   connect(&transferFunctionEditor, SIGNAL(transferFunctionChanged()), this, SLOT(render()));
@@ -256,15 +282,38 @@ void VolumeViewer::initUserInterfaceWidgets() {
   transferFunctionEditor.setMaximumHeight(transferFunctionEditor.minimumSize().height());
 
 	QDockWidget *slicesEditorDockWidget = new QDockWidget("Slice Planes Editor", this);
+	slicesEditorDockWidget->hide();
 	slicesEditorDockWidget->setWidget(&slicesEditor);
 	connect(&slicesEditor, SIGNAL(slicesChanged()), this, SLOT(commitSlices()));
   addDockWidget(Qt::LeftDockWidgetArea, slicesEditorDockWidget);
   slicesEditor.setMaximumHeight(slicesEditor.minimumSize().height());
 
 	QDockWidget *isosEditorDockWidget = new QDockWidget("Isovalues Editor", this);
+	isosEditorDockWidget->hide();
 	isosEditorDockWidget->setWidget(&isosEditor);
 	connect(&isosEditor, SIGNAL(isosChanged()), this, SLOT(commitIsos()));
   addDockWidget(Qt::LeftDockWidgetArea, isosEditorDockWidget);
   isosEditor.setMaximumHeight(isosEditor.minimumSize().height());
 
+	QMenu *toolsMenu = menuBar()->addMenu(tr("&Tools"));
+	
+	QAction *renderPropertiesAction = new QAction(tr("Render Properties"), this);
+	toolsMenu->addAction(renderPropertiesAction);
+	connect(renderPropertiesAction, SIGNAL(triggered()), renderPropertiesEditorDockWidget, SLOT(show()));
+	
+	QAction *transferFunctionAction = new QAction(tr("Transfer Function"), this);
+	toolsMenu->addAction(transferFunctionAction);
+	connect(transferFunctionAction, SIGNAL(triggered()), transferFunctionEditorDockWidget, SLOT(show()));
+
+	QAction *slicesAction = new QAction(tr("Slices"), this);
+	toolsMenu->addAction(slicesAction);
+	connect(slicesAction, SIGNAL(triggered()), slicesEditorDockWidget, SLOT(show()));
+
+	QAction *isosAction = new QAction(tr("Isosurfaces"), this);
+	toolsMenu->addAction(isosAction);
+	connect(isosAction, SIGNAL(triggered()), isosEditorDockWidget, SLOT(show()));
+
+	QAction *cameraAction = new QAction(tr("Camera/Lights"), this);
+	toolsMenu->addAction(cameraAction);
+	connect(cameraAction, SIGNAL(triggered()), osprayWindow->getCameraEditor(), SLOT(Open()));
 }

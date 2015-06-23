@@ -17,7 +17,7 @@ CINEMA_INCDIRS = \
 INCDIRS = ${OSPRAY_INCDIRS} ${CINEMA_INCDIRS}
 
 OSPRAY_LIBDIRS = \
-	-L${OSPRAY}/release
+	-L${OSPRAY}/release.64
 
 CINEMA_LIBDIRS = \
 	-L${CINEMA}/common.obj \
@@ -26,8 +26,8 @@ CINEMA_LIBDIRS = \
 
 LIBDIRS = -L. ${OSPRAY_LIBDIRS} ${CINEMA_LIBDIRS}
 
-OSPRAY_LIBS = -lospray
-CINEMA_LIBS = -lcinema -lvis -lcommon 
+OSPRAY_LIBS = -lospray -lospray_embree
+CINEMA_LIBS = -lcinema  -lcommon 
 
 LIBS = -lperlin ${OSPRAY_LIBS} ${CINEMA_LIBS} -lpng -lpthread
 
@@ -43,7 +43,7 @@ dump: dump.o libperlin.so
 	${CXX} -o dump dump.o ${LIBDIRS} ${LIBS}
 
 perlin.io perlin_ispc.h: perlin.ispc 
-	${ISPC} --arch=x86-64 --pic -O3 --woff --target=avx --addressing=32 \
+	${ISPC} --arch=x86-64 --pic -O3 --woff --target=avx --addressing=64 \
 					--cpu=corei7-avx --opt=fast-math \
 					-h perlin_ispc.h -MMM perlin_dev.idep -o perlin.io perlin.ispc
 

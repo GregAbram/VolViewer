@@ -21,7 +21,7 @@ INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/../ispc ${PROJECT_SOURCE_DIR}/../commo
 LINK_DIRECTORIES(${PROJECT_SOURCE_DIR}/../common.obj ${PROJECT_SOURCE_DIR}/../ispc)
 
 # setup dependencies
-SET(LIBS ${LIBS} ospray vis)
+SET(LIBS ${LIBS} ospray)
 
 FIND_PACKAGE(Qt4 REQUIRED) 
 SET(QT_USE_QTOPENGL TRUE)
@@ -61,6 +61,8 @@ SET(SRCS ${SRCS}
   VolumeViewer.cpp
 	SlicesEditor.cpp
 	IsosEditor.cpp
+	RenderPropertiesEditor.cpp
+	CameraEditor.cpp
   )
 
 SET(MOC_HEADERS
@@ -68,7 +70,9 @@ SET(MOC_HEADERS
   TransferFunctionEditor.h
 	SlicesEditor.h
 	IsosEditor.h
+	RenderPropertiesEditor.h
   VolumeViewer.h
+	CameraEditor.h
   )
 
 QT4_WRAP_CPP(MOC_OUTFILES ${MOC_HEADERS})

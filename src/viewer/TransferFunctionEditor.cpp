@@ -30,6 +30,8 @@ static std::string cmap_name(std::string name)
 
 TransferFunctionEditor::TransferFunctionEditor()
 {
+	renderer = NULL;
+
   //! Load color maps.
   loadColorMaps();
 
@@ -39,9 +41,9 @@ TransferFunctionEditor::TransferFunctionEditor()
   setLayout(layout);
 
   //! Form layout.
-  QWidget * formWidget = new QWidget();
-  QFormLayout * formLayout = new QFormLayout();
-  formWidget->setLayout(formLayout);
+  QWidget *formWidget = new QWidget();
+  QGridLayout *gridLayout = new QGridLayout();
+  formWidget->setLayout(gridLayout);
   layout->addWidget(formWidget);
 
   //! Color map choice.
@@ -51,7 +53,19 @@ TransferFunctionEditor::TransferFunctionEditor()
     colorMapComboBox.addItem(name.c_str());
 	}
 
-	formLayout->addRow("Colormap", &colorMapComboBox);
+	gridLayout->addWidget(new QLabel("Colormap"), 0, 0, 1, 1);
+	gridLayout->addWidget(&colorMapComboBox, 0, 1, 1, 3);
+
+	gridLayout->addWidget(new QLabel("Min"), 1, 0, 1, 1);
+	rangeMin.setValidator(new QDoubleValidator());
+	connect(&rangeMin, SIGNAL(returnPressed()), this, SLOT(rangeMinChanged()));
+	gridLayout->addWidget(&rangeMin, 1, 1, 1, 1);
+	
+
+	gridLayout->addWidget(new QLabel("Max"), 1, 2, 1, 1);
+	rangeMax.setValidator(new QDoubleValidator());
+	connect(&rangeMax, SIGNAL(returnPressed()), this, SLOT(rangeMaxChanged()));
+	gridLayout->addWidget(&rangeMax, 1, 3, 1, 1);
 
   //! Widget containing opacity transfer function widget and scaling slider.
   QWidget * transferFunctionAlphaGroup = new QWidget();
@@ -66,8 +80,7 @@ TransferFunctionEditor::TransferFunctionEditor()
   transferFunctionAlphaScalingSlider.setOrientation(Qt::Vertical);
   hboxLayout->addWidget(&transferFunctionAlphaScalingSlider);
 
-  layout->addWidget(transferFunctionAlphaGroup);
-
+  gridLayout->addWidget(transferFunctionAlphaGroup, 2, 0, 1, 4);
   connect(&colorMapComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(setColorMapIndex(int)));
   connect(&transferFunctionAlphaWidget, SIGNAL(transferFunctionChanged()), this, SLOT(alphaWidgetChanged()));
   connect(&transferFunctionAlphaScalingSlider, SIGNAL(valueChanged(int)), this, SLOT(alphaWidgetChanged()));
@@ -121,10 +134,24 @@ void TransferFunctionEditor::addColorMap(VColorMap cmap)
   colorMapComboBox.setCurrentIndex(colorMaps.size()-1);
 }
 
+void TransferFunctionEditor::_setRange(float min, float max)
+{
+	rangeMin.setText(QString::number(min));
+	rangeMax.setText(QString::number(max));
+}
+
+void TransferFunctionEditor::setRange(float min, float max)
+{
+	transferFunction.SetMin(min);
+	transferFunction.SetMax(max);
+	_setRange(min, max);
+}
+
 void TransferFunctionEditor::loadState(Value& in)
 {
-
 	transferFunction.loadState(in);
+	
+	setRange(transferFunction.GetMin(), transferFunction.GetMax());
 
   transferFunctionAlphaScalingSlider.setValue(int(transferFunction.GetScale() * (transferFunctionAlphaScalingSlider.minimum() + transferFunctionAlphaScalingSlider.maximum())));
 
@@ -150,6 +177,20 @@ void TransferFunctionEditor::loadState(Value& in)
 		colorMapComboBox.setCurrentIndex(colorMapIndex);
 	}
 
+}
+
+void TransferFunctionEditor::rangeMinChanged()
+{
+	float a = atof(rangeMin.text().toStdString().c_str());
+	getTransferFunction().SetMin(a);
+	modifiedTransferFunction();
+}
+
+void TransferFunctionEditor::rangeMaxChanged()
+{
+	float a = atof(rangeMax.text().toStdString().c_str());
+	getTransferFunction().SetMax(a);
+	modifiedTransferFunction();
 }
 
 void TransferFunctionEditor::saveState(Document& doc, Value &out)

@@ -16,6 +16,7 @@
 
 
 #include "QOSPRayWindow.h"
+#include "QColor"
 
 #include <iostream>
 #include <fstream>
@@ -37,13 +38,9 @@ QOSPRayWindow::QOSPRayWindow(QMainWindow *parent,
     frameBuffer(NULL)
 {
   this->renderer = renderer;
-
 	setFocusPolicy(Qt::StrongFocus);
-
-	camera.setRenderer(renderer);
-	camera.setPos(osp::vec3f(255.5, 255, 255.5));
-	camera.setDir(osp::vec3f(0.0, -1700.5, 0.0));
-	// camera.commit();
+	cameraEditor.getCamera()->setRenderer(renderer);
+	cameraEditor.setWindow(this);
 }
 
 QOSPRayWindow::~QOSPRayWindow()
@@ -53,16 +50,22 @@ QOSPRayWindow::~QOSPRayWindow()
 }
 
 void
+QOSPRayWindow::Clear()
+{
+	glClearColor(0.0, 0.0, 0.0, 1.0);
+	glClear(GL_COLOR_BUFFER_BIT);
+}
+
+void
 QOSPRayWindow::saveState(Document& doc, Value &section)
 {
-	camera.saveState(doc, section);
+	cameraEditor.saveState(doc, section);
 }
 
 void
 QOSPRayWindow::loadState(Value& in)
 {
-	camera.loadState(in);
-	// camera.commit();
+	cameraEditor.loadState(in);
 }
 
 void QOSPRayWindow::setRenderingEnabled(bool renderingEnabled)
@@ -101,7 +104,6 @@ void QOSPRayWindow::paintGL()
       benchmarkTimer.start();
     }
 
-	camera.commit();
 	ospCommit(renderer);
 
   renderFrameTimer.start();
@@ -121,7 +123,7 @@ void QOSPRayWindow::paintGL()
   // automatic rotation
   if(rotationRate != 0.f)
     {
-      camera.rotateCenter(rotationRate, 0.f);
+      cameraEditor.rotateFrame(rotationRate, 0.f);
     }
 
   // increment frame counter
@@ -157,8 +159,7 @@ void QOSPRayWindow::resizeGL(int width, int height)
   frameBuffer = ospNewFrameBuffer(windowSize, OSP_RGBA_I8);
 
   // update camera aspect ratio
-  camera.setAspect(float(width) / float(height));
-	camera.commit();
+  cameraEditor.getCamera()->setAspect(float(width) / float(height));
 
   // update OpenGL camera and force redraw
   glViewport(0, 0, width, height);
@@ -190,11 +191,11 @@ void QOSPRayWindow::mouseMoveEvent(QMouseEvent * event)
       float du = dx * rotationSpeed;
       float dv = dy * rotationSpeed;
 
-      camera.rotateCenter(du, dv);
+      cameraEditor.rotateFrame(du, dv);
     }
   else if(event->buttons() & Qt::RightButton)
     {
-			camera.zoom(dy);
+			cameraEditor.zoom(dy);
     }
 
   lastMousePosition = event->pos();
@@ -205,12 +206,12 @@ void QOSPRayWindow::keyPressEvent(QKeyEvent *event)
 {
 	if (event->text().toStdString()[0] == '+')
 	{
-			camera.zoom(5);
+			cameraEditor.zoom(-5);
 			updateGL();
 	}
 	else if (event->text().toStdString()[0] == '-')
 	{
-			camera.zoom(-5);
+			cameraEditor.zoom(5);
 			updateGL();
 	}
 }

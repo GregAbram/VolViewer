@@ -47,11 +47,19 @@ syntax(char *a)
 
 int main(int argc, char *argv[]) {
 
+#if 0
+	bool dbg = true;
+	printf("gdb %s %d\n", argv[0], getpid());
+	while (dbg)
+		sleep(1);
+#endif
+
   //! Initialize OSPRay.
   ospInit(&argc, (const char **) argv);
 
   //! Initialize Qt.
   QApplication *app = new QApplication(argc, argv);
+	app->setApplicationName(QString("VolViewer"));
 
   string volname("");
   string statename("");
@@ -167,9 +175,6 @@ int main(int argc, char *argv[]) {
 
   //! Set the window size if specified.
   if (viewSizeWidth != 0 && viewSizeHeight != 0) volumeViewer->getWindow()->setFixedSize(viewSizeWidth, viewSizeHeight);
-
-  //! Set the view up vector if specified.
-  if(viewUp != osp::vec3f(0.f)) volumeViewer->getWindow()->getCamera().setUp(viewUp);
 
 	if (volname != "")
 		volumeViewer->importFromFile(volname);

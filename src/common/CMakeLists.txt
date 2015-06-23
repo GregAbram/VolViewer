@@ -14,5 +14,5 @@ ELSE()
   MESSAGE("OSPRAY_SRCDIR NOT OK")
 ENDIF()
 
-ADD_LIBRARY(common SHARED TransferFunction.cpp Importer.cpp)
+ADD_LIBRARY(common SHARED TransferFunction.cpp Importer.cpp Camera.cpp Lights.cpp RenderProperties.cpp)
 

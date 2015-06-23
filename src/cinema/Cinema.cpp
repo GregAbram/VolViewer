@@ -116,12 +116,16 @@ void Variable::RenderDown(Renderer& r, string s, Document& doc)
 
 SlicePlaneVariable::SlicePlaneVariable(string n, vector<int> c, vector<int> v, vector<int> f, vector<int> vals) : Variable(n)
 {
-	if (n == "X")
-		axis = 0;
-	else if (n == "Y")
-		axis = 1;
-	else 
-		axis = 2;
+	for (int i = 0; i < strlen(n.c_str()); i++)
+	{
+		int c = n.c_str()[i];
+		if (c == 'X')
+			axes.push_back(0);
+		else if (c == 'Y')
+			axes.push_back(1);
+		else 
+			axes.push_back(2);
+	}
 
 	clip  	= c;
 	visible = v;
@@ -133,12 +137,16 @@ SlicePlaneVariable::SlicePlaneVariable(string n, vector<int> c, vector<int> v, v
 
 SlicePlaneVariable::SlicePlaneVariable(string n, vector<int> v, vector<int> f, vector<int> vals) : Variable(n)
 {
-	if (n == "X")
-		axis = 0;
-	else if (n == "Y")
-		axis = 1;
-	else 
-		axis = 2;
+	for (int i = 0; i < strlen(n.c_str()); i++)
+	{
+		int c = n.c_str()[i];
+		if (c == 'X')
+			axes.push_back(0);
+		else if (c == 'Y')
+			axes.push_back(1);
+		else 
+			axes.push_back(2);
+	}
 
 	visible = v;
 	flip    = f;
@@ -152,7 +160,8 @@ void  SlicePlaneVariable::Render(Renderer& r, string s, Document& doc)
 		string s1;
 
 		std::cerr << "CLIP SET TO " << clip[i] << "\n";
-		r.getSlices().SetClip(axis, clip[i]);
+		for (int i = 0; i < axes.size(); i++)
+			r.getSlices().SetClip(axes[i], clip[i]);
 
 		if (clip.size() > 1)
 		{
@@ -168,7 +177,8 @@ void  SlicePlaneVariable::Render(Renderer& r, string s, Document& doc)
 		{
 			string s2;
 
-			r.getSlices().SetVisible(axis, visible[j]);
+			for (int i = 0; i < axes.size(); i++)
+				r.getSlices().SetVisible(axes[i], visible[j]);
 			std::cerr << "VISIBLE SET TO " << visible[j] << "\n";
 
 			if (visible.size() > 1)
@@ -185,7 +195,9 @@ void  SlicePlaneVariable::Render(Renderer& r, string s, Document& doc)
 			{
 				string s3;
 
-				r.getSlices().SetFlip(axis, flip[k] == 1);
+				for (int i = 0; i < axes.size(); i++)
+					r.getSlices().SetFlip(axes[i], flip[k] == 1);
+
 				std::cerr << "FLIP SET TO " << flip[k] << "\n";
 
 				if (flip.size() > 1)
@@ -202,7 +214,9 @@ void  SlicePlaneVariable::Render(Renderer& r, string s, Document& doc)
 				{
 					string s4;
 
-					r.getSlices().SetValue(axis, values[l]);
+					for (int i = 0; i < axes.size(); i++)
+						r.getSlices().SetValue(axes[i], values[l]);
+
 					std::cerr << "VALUE SET TO " << values[l] << "\n";
 
 					if (values.size() > 1)
@@ -361,7 +375,7 @@ void CameraVariable::RenderShot(Renderer& r, string s, Document& doc)
 		r.getSlices().commit(r.getRenderer(), r.getVolume());
 		r.getIsos().commit(r.getVolume());
 		r.getCamera().commit();
-		r.getTransferFunction().commit(r.getRenderer());
+		// r.getTransferFunction().commit(r.getRenderer());
 		r.Render(s + ".png");
 
 		StringBuffer sbuf;
@@ -452,7 +466,7 @@ Cinema::~Cinema()
 	for (Variable *v = variableStack; v != NULL; v = vn)
 	{
 		vn = v->getDown();
-		delete v;
+		// delete v;
 	}
 }
 

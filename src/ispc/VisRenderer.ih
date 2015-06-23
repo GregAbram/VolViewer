@@ -35,12 +35,16 @@ struct VisRenderer {
   //! Renderer state. TODO: camera&model already in inherited!
   Camera *uniform camera;  Light **uniform lights;  Model *uniform model;  Model *uniform dynamicModel;
 
-	int     numLights;
-  vec3f  *uniform slicenorms;  
-	float  *uniform sliceds; 
+	uniform int     numLights;
+  uniform vec3f  *uniform slicenorms;  
+	uniform float  *uniform sliceds; 
 	uniform int 		sliceCount; 
-	int    *uniform sliceVisibility;
-	int    *uniform sliceClips;
+	uniform int    *uniform sliceVisibility;
+	uniform int    *uniform sliceClips;
+
+	uniform	int			numAO;
+	uniform float		AOradius;
+	uniform float		ambient;
 };
 
 void VisRenderer_renderFramePostamble(Renderer *uniform renderer, 
@@ -51,3 +55,7 @@ void VisRenderer_renderFramePreamble(Renderer *uniform renderer,
 export void VisRenderer_setSlices(void *uniform renderer, const uniform size_t &count, 			
 																								vec4f *uniform planes, int *uniform clips, 
 																								int *uniform visible);
+
+export void VisRenderer_set_AO_number(void *uniform pointer, uniform int n);
+export void VisRenderer_set_AO_radius(void *uniform pointer, uniform float r);
+

@@ -15,30 +15,32 @@ SlicesEditor::SlicesEditor()
 
 	vl->addWidget(w);
 
-	l->addWidget(new QLabel("offset"),  0, 0, Qt::AlignCenter);
-	l->addWidget(new QLabel("clip"),    0, 1, Qt::AlignRight);
-	l->addWidget(new QLabel("flip"),    0, 2, Qt::AlignRight);
-	l->addWidget(new QLabel("visible"), 0, 3, Qt::AlignRight);
+	l->addWidget(new QLabel("offset"),  0, 1, Qt::AlignCenter);
+	l->addWidget(new QLabel("clip"),    0, 2, Qt::AlignRight);
+	l->addWidget(new QLabel("flip"),    0, 3, Qt::AlignRight);
+	l->addWidget(new QLabel("visible"), 0, 4, Qt::AlignRight);
 
 	const char *labels[3] = { "X", "Y", "Z" };
 
 	for (int i = 0; i < 3; i++)
 	{
+		l->addWidget(new QLabel(labels[i]),  i+1, 0, Qt::AlignLeft);
+
 		sliders[i] = new QSlider(Qt::Horizontal);
 		connect(sliders[i], SIGNAL(sliderMoved(int)), this, SLOT(sliderChanged(int)));
-		l->addWidget(sliders[i], i+1, 0);
+		l->addWidget(sliders[i], i+1, 1);
 
 		clips[i] = new QCheckBox("");
 		connect(clips[i], SIGNAL(stateChanged(int)), this, SLOT(slicesModified()));
-		l->addWidget(clips[i], i+1, 1);
+		l->addWidget(clips[i], i+1, 2);
 
 		flips[i] = new QCheckBox("");
 		connect(flips[i], SIGNAL(stateChanged(int)), this, SLOT(slicesModified()));
-		l->addWidget(flips[i], i+1, 2);
+		l->addWidget(flips[i], i+1, 3);
 
 		visibility[i] = new QCheckBox("");
 		connect(visibility[i], SIGNAL(stateChanged(int)), this, SLOT(slicesModified()));
-		l->addWidget(visibility[i], i+1, 3);
+		l->addWidget(visibility[i], i+1, 4);
 	}
 
 }

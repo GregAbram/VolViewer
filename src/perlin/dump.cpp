@@ -48,17 +48,21 @@ int main(int argc, char *argv[])
 
 	ospInit(&argc, (const char **)argv);
 
-	int np = xsz*ysz*zsz;
+	size_t np = ((size_t)xsz)*((size_t)ysz)*((size_t)zsz);
 	float *scalars = new float[np];
 
+#if 0
 	MyVolume volume(true);
 	volume.SetType(std::string("float"));
 	volume.SetDimensions(xsz, ysz, zsz);
 	volume.SetVoxels((void *)scalars);
 	volume.commit();
+#endif
 
 	ispc::PerlinT(scalars, xsz, ysz, zsz, 0.0);
+#if 0
 	volume.ResetMinMax();
+#endif
 
 	ofstream f("data.raw", ofstream::binary);
 	f.write((char *)scalars, np*sizeof(float));

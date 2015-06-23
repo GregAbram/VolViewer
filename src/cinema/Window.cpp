@@ -9,7 +9,7 @@ using namespace std;
 
 void Window::save(std::string filename)
 {
-	uint *mappedFrameBuffer = (unsigned int *)ospMapFrameBuffer(frameBuffer);
+	unsigned int *mappedFrameBuffer = (unsigned int *)ospMapFrameBuffer(frameBuffer);
 	write_png(filename.c_str(), width, height, mappedFrameBuffer);
   ospUnmapFrameBuffer(mappedFrameBuffer, frameBuffer);
 }

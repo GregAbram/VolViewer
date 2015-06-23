@@ -9,6 +9,7 @@ Renderer::Renderer(bool shared) :
 {
 	renderer = ospNewRenderer("vis_renderer");
 	camera.setRenderer(renderer);
+	renderProperties.setRenderer(renderer);
 
 	float clips[12] = 
 		{
@@ -25,7 +26,8 @@ Renderer::Renderer(bool shared) :
 	OSPModel dmodel = ospNewModel();
 	ospCommit(dmodel);
 	ospSetObject(renderer, "dynamic_model", dmodel);
-	std::cerr << "Here DM\n";
+
+	
 }
 
 Renderer::~Renderer()
@@ -71,9 +73,16 @@ Renderer::LoadVolume(std::string volumeName)
 
   int m = x > y ? x > z ? x : z : y > z ? y : z;
 
-  getCamera().setPos(x/2.0, y/2.0, -(3*m - z/2.0));
-  getCamera().setDir(0.0, 0.0, 3*m);
+  getCamera().setPos(x/2.0, y/2.0, -(1.5*m - z/2.0));
+  getCamera().setDir(0.0, 0.0, 1.5*m);
   getCamera().commit();
+
+	getLights().commit(getRenderer());
+	getTransferFunction().commit(getRenderer());
+	getSlices().commit(getRenderer(), &volume);
+	getIsos().commit(&volume);
+	renderProperties.commit();
+	
 }
 
 static char xyzzy[10240];
@@ -93,31 +102,44 @@ Renderer::LoadState(std::string statefile, bool with_data)
   doc.Parse(xyzzy);
   in.close();
 
-	if (! doc.HasMember("Volume"))
+	if (! doc.IsObject() ||  ! doc.HasMember("State"))
   {
-    std::cerr << "no volume?\n";
+    std::cerr << "invalud state file\n";
     return;
   }
 
-	getCamera().loadState(doc);
-	getCamera().commit();
+	if (doc["State"].HasMember("Camera")) 
+	{
+		getCamera().loadState(doc["State"]["Camera"]);
+		getCamera().commit();
+	}
 
-	getLights().loadState(doc);
-	getLights().commit(getRenderer());
+	if (doc["State"].HasMember("Lights")) 
+	{
+		getLights().loadState(doc["State"]["Lights"]);
+		getLights().commit(getRenderer());
+	}
 
-	getTransferFunction().loadState(doc);
-	getColorMap().loadState(doc);
-	getColorMap().commit(getTransferFunction());
-	getTransferFunction().commit(getRenderer());
+	if (doc["State"].HasMember("TransferFunction")) 
+	{
+		getTransferFunction().loadState(doc["State"]["TransferFunction"]);
+		getTransferFunction().commit(getRenderer());
+	}
 
-	getSlices().loadState(doc);
-	getSlices().commit(getRenderer(), &volume);
+	if (doc["State"].HasMember("Slices")) 
+	{
+		getSlices().loadState(doc["State"]["Slices"]);
+		getSlices().commit(getRenderer(), &volume);
+	}
 	
-	getIsos().loadState(doc);
-	getIsos().commit(&volume);
+	if (doc["State"].HasMember("Isosurfaces")) 
+	{
+		getIsos().loadState(doc["State"]["Isosurfaces"]);
+		getIsos().commit(&volume);
+	}
 
 	if (with_data)
-		LoadDataFromFile(doc["Volume"].GetString());
+		LoadDataFromFile(doc["State"]["Volume"].GetString());
 	
 	in.close();
 }

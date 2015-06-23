@@ -5,10 +5,15 @@
 
 using namespace std;
 
+#if 0
+int write_png(const char *filename, int w, int h, unsigned int *rgba)
+{return 1;}
+#else
+
 void png_error(png_structp png_ptr, png_const_charp error_msg)
 {
   cerr << "PNG error: " << error_msg << "\n";
-  longjmp(png_ptr->jmpbuf, 1);
+  // longjmp(png_ptr->jmpbuf, 1);
 }
 
 void png_warning(png_structp png_ptr, png_const_charp warning_msg)
@@ -16,7 +21,7 @@ void png_warning(png_structp png_ptr, png_const_charp warning_msg)
   cerr << "PNG error: " << warning_msg << "\n";
 }
 
-int write_png(const char *filename, int w, int h, uint *rgba)
+int write_png(const char *filename, int w, int h, unsigned int *rgba)
 {
   png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, (png_voidp)NULL, png_warning, png_error);
   if (!png_ptr)
@@ -41,12 +46,12 @@ int write_png(const char *filename, int w, int h, uint *rgba)
     return 0;
   }
 
-  if (setjmp(png_ptr->jmpbuf))
-  {
-    fclose(fp);
-    png_destroy_write_struct(&png_ptr, (png_infopp)NULL);
-    return 0;
-  }
+  // if (setjmp(png_ptr->jmpbuf))
+  // {
+    // fclose(fp);
+    // png_destroy_write_struct(&png_ptr, (png_infopp)NULL);
+    // return 0;
+  // }
 
   png_init_io(png_ptr, fp);
 
@@ -68,3 +73,4 @@ int write_png(const char *filename, int w, int h, uint *rgba)
 
   return 1;
 }
+#endif

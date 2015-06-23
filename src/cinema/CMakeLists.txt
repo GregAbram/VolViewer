@@ -6,7 +6,7 @@ LINK_DIRECTORIES(${PROJECT_SOURCE_DIR}/../common
 ${PROJECT_SOURCE_DIR}/../ispc)
 
 # setup dependencies
-SET(LIBS ${LIBS} ospray vis)
+SET(LIBS ${LIBS} ospray)
 
 INCLUDE_DIRECTORIES(../common ..)
 LINK_DIRECTORIES(../common.obj ../ispc)

@@ -55,10 +55,13 @@ namespace ospray {
 		void *lightData = getParamData("lights", NULL);
 		if (lightData)
 			ispc::VisRenderer_setLights(ispcEquivalent, getLightsFromData(getParamData("lights", NULL)));
+		else
+			ispc::VisRenderer_setLights(ispcEquivalent, NULL);
 
-    if (*(int *)(getParamData("nslices", NULL)->data))
-    {
-      Data *planes = getParamData("slice planes", NULL);
+    Data *t = getParamData("slice planes", NULL);
+		if (t)
+		{
+      Data *planes = t;
       Data *svis = getParamData("slice visibility", NULL);
       Data *sclip = getParamData("slice clips", NULL);
       ispc::VisRenderer_setSlices(ispcEquivalent, planes->numItems, 
@@ -67,6 +70,15 @@ namespace ospray {
     }
     else
       ispc::VisRenderer_setSlices(ispcEquivalent, 0, NULL, NULL, NULL);
+
+		int num = getParam1i("AO number", 0);
+		ispc::VisRenderer_set_AO_number(ispcEquivalent, num);
+
+		float rad = getParam1f("AO radius", 0.0);
+		ispc::VisRenderer_set_AO_radius(ispcEquivalent, rad);
+
+		float amb = getParam1f("ambient", 0.5);
+		ispc::VisRenderer_set_ambient(ispcEquivalent, amb);
 
     //! Initialize state in the parent class, must be called after the ISPC object is created.
     Renderer::commit();
