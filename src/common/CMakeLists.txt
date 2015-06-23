@@ -24,4 +24,5 @@ ENDIF()
 
 
 ADD_LIBRARY(common SHARED TransferFunction.cpp Importer.cpp Camera.cpp Lights.cpp RenderProperties.cpp)
+TARGET_LINK_LIBRARIES(common ${LIBS})
 
