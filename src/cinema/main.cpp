@@ -19,12 +19,16 @@
 #include <sstream>
 
 #include "Cinema.h"
+#include "cinema_cfg.h"
 
 using namespace std;
 
 int main(int argc, char *argv[]) {
 		int w = 1920, h = 1080;
 		int ni = 32;
+		bool show = false;
+		bool saveState = false;
+
 
   //! Initialize Cinema
 	Cinema cinema(&argc, (const char **)argv);
@@ -33,9 +37,13 @@ int main(int argc, char *argv[]) {
   if (argc < 2) {
 
     std::cerr << " "                                                                               << std::endl;
-    std::cerr << "  USAGE:  " << argv[0] << "[options] statefile"			                             << std::endl;
+    std::cerr << "  USAGE:  " << argv[0] << "[options] statefile"                                  << std::endl;
     std::cerr << " "                                                                               << std::endl;
     std::cerr << "  Options:"                                                                      << std::endl;
+#if WITH_OPENGL == TRUE
+    std::cerr << "    -S                          : show rendered images"                          << std::endl;
+#endif
+    std::cerr << "    -F                          : save state files"		                           << std::endl;
     std::cerr << "    -s w h                      : size of images (1920x1080)"                    << std::endl;
     std::cerr << "    -n nImages                  : number of images to render (32)"               << std::endl;
     std::cerr << " "                                                                               << std::endl;
@@ -59,6 +67,14 @@ int main(int argc, char *argv[]) {
       if (i + 1 >= argc) throw std::runtime_error("missing number of images argument");
 			ni = atoi(argv[++i]);
 		}
+		else if (!strcmp(argv[i], "-F"))
+    {
+      saveState = true;
+    }
+		else if (!strcmp(argv[i], "-S"))
+    {
+      show = true;
+    }
 		else
 		{
 			if (filename != NULL)
@@ -68,11 +84,13 @@ int main(int argc, char *argv[]) {
 		}
   }
 
-  Renderer renderer(false);
-	renderer.getWindow().resize(w, h);
+  Renderer renderer(w, h, false);
 	renderer.Load(std::string(filename));
+#if WITH_OPENGL == TRUE
+	renderer.getWindow()->setShow(show);
+#endif
 
-#if 1
+#if 0
 	vector<int> phis;
 	int d = 20 / 2;
 	for (int i = 0; i < 3; i++)
@@ -121,8 +139,8 @@ int main(int argc, char *argv[]) {
 #if 1
 	{
 		vector<int> isovalues;
-		for (int i = 0; i < 20; i++)
-			isovalues.push_back((int)(20 + (i / 19.0)*60));
+		for (int i = 0; i < 10; i++)
+			isovalues.push_back((int)(20 + (i / 9.0)*60));
 
 		float min, max;
 		renderer.getVolume()->GetMinMax(min, max);
@@ -133,7 +151,7 @@ int main(int argc, char *argv[]) {
 	}
 #endif
 
-#if 1
+#if 0
 	vector<int> doVR;
 	doVR.push_back(0);
 	// doVR.push_back(1);
@@ -144,6 +162,7 @@ int main(int argc, char *argv[]) {
 	std::cerr << "Requires " << cinema.Count() << " images\n";
 	camvar->ResetCount();
 
+	cinema.setSaveState(saveState);
 	cinema.Render(renderer, 0);
 	cinema.WriteInfo();
 

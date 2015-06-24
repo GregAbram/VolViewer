@@ -10,6 +10,8 @@
 using namespace std;
 using namespace rapidjson;
 
+class Cinema;
+
 class Variable
 {
 public:
@@ -23,12 +25,14 @@ public:
 
 	Variable *getDown() {return down;}
 	void setDown(Variable *v) {down = v;}
+	void setCinema(Cinema *c) {cinema = c;}
 
 	virtual int count() = 0;
 
 protected:
 	Variable *down;
 	string name;
+	Cinema *cinema;
 };
 
 class CameraVariable : public Variable
@@ -76,7 +80,7 @@ protected:
 class SlicePlaneVariable : public Variable
 {
 public:
-	SlicePlaneVariable(string n, vector<int> c, vector<int> v, vector<int> f, vector<int> vals);
+	SlicePlaneVariable(string n, vector<int> c, vector<int> v, vector<int> f, vector<int> val);
 	SlicePlaneVariable(string n, vector<int> v, vector<int> f, vector<int> vals);
 
 	void  Render(Renderer& r, string s, Document& doc);
@@ -125,8 +129,12 @@ public:
 
 		int Count() { return variableStack ? variableStack->count() : -1 ; }
 
+		void setSaveState(bool s) { saveState = s; }
+		bool getSaveState() { return saveState; }
+
 private:
 		Variable *variableStack;
 		vector<int> timesteps;
+		bool saveState;
 };
 

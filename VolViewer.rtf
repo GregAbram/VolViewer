@@ -1,13 +1,28 @@
 {\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
 {\fonttbl\f0\fswiss\fcharset0 Helvetica;}
 {\colortbl;\red255\green255\blue255;}
-\margl1440\margr1440\vieww25800\viewh19800\viewkind0
+\margl1440\margr1440\vieww25800\viewh20860\viewkind0
 \deftab720
 \pard\pardeftab720
 
 \f0\fs24 \cf0 With apologies, the build process here is pretty crude.  In particular, I haven't figured out how to use cmake with ISPC, so the directories that build ISPC stuff get built using a Makefile, which you'll have to edit to point to appropriate places for OSPRay and ISPC.   
-\b NOTE: when you build OSPRay, you will need to set OSPRAY_BUILD_ISA appropriately - on Maverick, 'avx' works.
+\b NOTE: when you build OSPRay, you will need to set OSPRAY_BUILD_ISA appropriately - on Maverick, 'avx' works.   
+\b0 Prerequisites are Qt and CMake.   \
+\
+\pard\pardeftab720
+
+\b\fs36 \cf0 0.  Download VolViewer Source\
+\pard\pardeftab720
+
+\b0\fs24 \cf0 \
+The source for VolViewer is in github.   Let's assume you want to install the source tree in your home directory.\
+\
+
+\b cd ~\
+git clone git@github.com:TACC/VolViewer.git\
+
 \b0 \
+This will create a source directory at ~/VolViewer\
 \
 \pard\pardeftab720
 
@@ -16,16 +31,60 @@
 \pard\pardeftab720
 
 \fs24 \cf0 \
-This is a customization of the OSPRay RaycastVolumeRenderer to handle implicit slicing planes and multiple light sources.   Hopefully will eventually show up in OSPRay.  Note that this uses a simple Makefile and builds in place.\
+This is a customization of the OSPRay RaycastVolumeRenderer to handle implicit slicing planes and multiple light sources.   Hopefully will eventually show up in official OSPRay, but for now we add it to the OSPRay build by linking the source directory into the OSPRay source tree, make a change to the appropriate CMakeLists.txt and build it into OSPRay.\
 \
-cd VolumeViewer/src/ispc\
+Lets assume the root of the OSPRay source tree is ~/OSPRAY/ospray - that is, sitting in your home directory you did:\
 \
-- edit the Makefile to point to the OSPRay source and ISPC compiler\
+
+\b cd ~\
+mkdir OSPRay\
+cd OSPRAY\
+git clone https://github.com/ospray/ospray.git\
 \
+
+\b0 That will create ~/OSPRay/ospray   Note that you'll also have to install ISPC in the same directory (e.g. ~/OSPRay) - see instructions at {\field{\*\fldinst{HYPERLINK "https://ospray.github.io/getting_ospray.html"}}{\fldrslt https://ospray.github.io/getting_ospray.html}}\
+\
+First we link in the VisRenderer OSPray renderer:\
+\
+
+\b cd ~/OSPRay/ospray/ospray/render\
+ln -s ~/VolViewer/src/ispc visrender
+\b0 \
+\
+Now you need to tell OSPRay its there:\
+\
+
+\b cd ~/OSPRay/ospray/ospray\
+\
+
+\b0 Edit the CMakeLists.txt file and add:\
+\
+render/visrender/VisRenderer.cpp\
+render/visrender/VisRenderer.ispc\
+render/visrender/SymbolRegistry.cpp\
+\
+to the list of sources, probably best after the lines adding the OSPRay volume rendering files.\
+\
+Now we need to make one change to the OSPRay source:  edit  ~/OSPRay/ospray/ospray/common/Ray.ih   Then find the line adding the field 
+\i userData 
+\i0 to the 
+\b struct Ray
+\b0  and comment it out.\
+\
+Now build OSPRay as before.  If I were you, I'd \
+\
+
+\b cd ~/OSPRay\
+mkdir obj\
+cd obj\
+cmake ../ospray\
 make\
 \
-Should create libvis.so\
-\
+
+\b0 If you get an error during the build, it may mention that userData field, in which case you didn't actually comment it out.  I've done this several times.
+\b \
+
+\b0 \
 \pard\pardeftab720
 
 \b\fs36 \cf0 2.  Build common library
@@ -34,21 +93,35 @@ Should create libvis.so\
 
 \fs24 \cf0 \
 These are various classes to handle common functionality between the Viewer and Cinema versions.\
-\
-cd VolumeViewer/sr\
+ 
+\b \
+cd ~/VolViewer/sr\
 mkdir common.obj\
-\
+
+\b0 \
 Note the name of this object directory - other stuff will depend on it, so don't get creative here\
 \
-cd common.obj\
+
+\b cd common.obj\
 cmake  -DOSPRAY_SRCDIR=
-\i wherever 
+\i wherever  -
+\i0 DOSPRAY_OBJDIR=
+\i wherever  
 \i0 ../common\
+
+\b0 \
+You'll need to set OSPRAY_SRCDIR to point to the OSPRay source and OSPRAY_OBJDIR to point to wherever you built OSPRay.  If you did it as described above, it'd be\
 \
-You'll need to set OSPRAY_SRCDIR to point to the OSPRay source\
-\
+
+\b cmake  -DOSPRAY_SRCDIR=$HOME/OSPRay/ospray -DOSPRAY_OBJDIR=$HOME/OSPRay/obj  ../common\
+
+\b0 \
+and then\
+
+\b \
 make\
-\
+
+\b0 \
 should create libcommon.so\
 \
 \pard\pardeftab720
@@ -58,96 +131,186 @@ should create libcommon.so\
 \pard\pardeftab720
 
 \fs24 \cf0 \
-This is a GUI for interactive viewing of volumes.   \
-\
-cd VolumeViewer/src\
+This is a GUI for interactive viewing of volumes.    You'll need Qt to be installed for this.\
+
+\b \
+cd ~/VolViewer/src\
 mkdir viewer.obj\
-\
+
+\b0 \
 Note the name of this object directory - other stuff will depend on it, so don't get creative here\
 \
-cd common.obj\
+
+\b cd viewer.obj\
 cmake  -DOSPRAY_SRCDIR=
 \i wherever -
 \i0 DOSPRAY_OBJDIR=
 \i wherever 
 \i0 ../viewer\
 \
-You'll need to set OSPRAY_SRCDIR to point to the OSPRay source and OSPRAY_OBJDIR to point to wherever you built OSPRay.   You'll need Qt for this.\
-j\
+
+\b0 You'll need to set OSPRAY_SRCDIR to point to the OSPRay source and OSPRAY_OBJDIR to point to wherever you built OSPRay.  If you did it as described above, it'd be\
+\
+
+\b cmake  -DOSPRAY_SRCDIR=$HOME/OSPRay/ospray -DOSPRAY_OBJDIR=$HOME/OSPRay/obj  ../viewer\
+
+\b0 \
+and then \
+\
+
+\b make
+\b0 \
+\
+should create an executable named 
+\b viewer\
+\
+
+\b0 \
+\pard\pardeftab720
+
+\b\fs36 \cf0 4.  First test\
+\pard\pardeftab720
+
+\b0\fs24 \cf0 \
+There are .env files in the root directory of the VolViewer source tree that will set up your environment to run the viewer.   Source mac.env or linux.env depending.  Now you should be able to run the viewer at the command line - just type viewer and return.  A black window should appear.    Close it\
+\
+Now we can create a test dataset.\
+\
+
+\b cd ~/VolViewer/test/sphere\
 make\
 \
-should create \
+
+\b0 That should create an executable named 
+\b sphere
+\b0 .   Now\
+\
+
+\b ./sphere 512\
+\
+
+\b0 should create 
+\b sphere.raw 
+\b0 and 
+\b sphere.vol\
+\
+
+\b0 Now start the viewer again.  On the tool bar, 
+\b File->Open 
+\b0 and select 
+\b sphere.vol   
+\b0 and the dataset should appear.   This is default volume rendering, and you should see an opaque cube.  Now you can show the transfer function by 
+\b Tools->Transfer Function
+\b0 .  It'll pop up in the original window, but you can drag it out onto the desktop.   From here you can fiddle the opacity over the data range, or scale the entire opacity function using the slider.   You can select other colormaps.\
+\
+When done with that, you can use 
+\b Tools->Isosurfaces 
+\b0 and 
+\b Tools->Slices 
+\b0 to show/hide/interact with isosurfaces and slicing planes.  You can use 
+\b Tools->Camera/Lights 
+\b0 to add additional lights and twiddle the camera, and 
+\b Tools->Render Properties 
+\b0 to set the proportion of ambient vs. Lambertian light and control ambient occlusion parameters.   Note that all the volume rendering, slicing and isosurfaces all work together, so if opaque parts of the volume can obscure isosurfaces and slicing planes - so drive the opacity to 0 if you don't see an isosurface or slice you are expecting.\
+
+\b \
+
+\b0 When you grow tired of fiddling with it, alter the transfer function to make the top 10% or so of the range opaque, put an isosirface in the center of the data range and enable all three slicing planes in the center of their range.  Then 
+\b File->Save State 
+\b0 and enter 
+\i sphere 
+\i0 in the Save As: widget.   This will create a file named 
+\b sphere.state 
+\b0 and if you restart the viewer, you can open this file to restore your session\
 \
 \pard\pardeftab720
 
-\b\fs36 \cf0 4.  Build the Cinema library and test executable
+\b\fs36 \cf0 5.  Build the Cinema library and test executable
 \b0 \
 \pard\pardeftab720
 
 \fs24 \cf0 \
 This is the library used to instrument a simulation and create Cinema databases.\
 \
-cd VolumeViewer/src\
-mkdir viewer.obj\
+
+\b cd VolViewer/src\
+mkdir cinema.obj\
 \
-Note the name of this object directory - other stuff will depenjkjd on it, so don't get creative here\
+
+\b0 Note the name of this object directory - other stuff will depend on it, so don't get creative here\
 \
-cd common.obj\
+
+\b cd common.obj\
 cmake  -DOSPRAY_SRCDIR=
 \i wherever -
 \i0 DOSPRAY_OBJDIR=
 \i wherever 
 \i0 ../cinema\
+
+\b0 \
+You'll need to set OSPRAY_SRCDIR to point to the OSPRay source and OSPRAY_OBJDIR to point to wherever you built OSPRay.   If you did it as described above, it'd be\
 \
-You'll need to set OSPRAY_SRCDIR to point to the OSPRay source and OSPRAY_OBJDIR to point to wherever you built OSPRay.  \
+
+\b cmake  -DOSPRAY_SRCDIR=$HOME/OSPRay/ospray -DOSPRAY_OBJDIR=$HOME/OSPRay/obj  ../cinema\
 \
-make\
+
+\b0 You also have the option of specifying additional options that allow it to build a window to display each frame as it completes.   These are: OPENGL_INCLUDE_DIR and OPENGL_LINK.   OPENGL_INCLUDE_DIR should contain a list of include directories in C++ compiler syntax [-Idir0 -Idir1 etc.] necessary for compiling GLX codes and the additional directories and libraries required to link it.  On my mac, this could be done on the command line by including:\
+\
+
+\b -DOPENGL_INCLUDE_DIR="/opt/X11/include"  -DOPENGL_LINK="-L/opt/X11/lib -lX11 -lgl "\
+
+\b0 \
+This will be pretty system dependent.   Finally, \
+
+\b make\
+
+\b0 \
+This will create an executable 
+\b cinema_test 
+\b0 and a library, either 
+\b libcinema.so 
+\b0 or 
+\b libcinema.dylib
+\b0  depending on your platform.\
+\
+Now if we return to the directory where we were viewing the sphere dataset (
+\b $HOME/VolViewer/test/sphere
+\b0 ) we can use cinema_test to create a cinema database.  Simply run:\
+\
+
+\b cinema_test -s 512 512 sphere.state \
+\
+
+\b0 to generate a cinema database.  Add a 
+\b -S 
+\b0 command line argument and, if you enabled the display window, you'll see each frame as it is rendered\
 \
 \pard\pardeftab720
 
-\b\fs36 \cf0 5.  Build the Perlin simulation simulation.  
+\b\fs36 \cf0 6.  Build the Perlin simulation simulation.  
 \b0 \
 \pard\pardeftab720
 
 \fs24 \cf0 \
-This code evolves a 3D noise function through time to simulate a simulation.   A library - libperlin.so implements the noise function (using ISPC).  Two executables are included: 
+The above example uses the cinema stuff to render lots of views of a single timestep.   The Perlin example code evolves a 3D noise function through time to simulate a simulation, and here we use the Cinema in situ - executing it once for each timestep of the simulation.     A library - libperlin.so implements the noise function (using ISPC).  Two executables are included: 
 \b dump
 \b0 , which can be used to write a test timestep, and 
 \b sim
 \b0 , which runs through a set of time steps and uses the Cinema library to generate a Cinema database.\
 \
-cd VolumeViewer/src/perlin\
-\
-- edit the Makefile to point to the OSPRay source and ISPC compiler\
-\
-make\
-\
-\pard\pardeftab720
 
-\b\fs36 \cf0 6.  Set various environment variables
+\b cd VolViewer/src/perlin\
+
 \b0 \
-\pard\pardeftab720
+- edit the Makefile to point to the OSPRay source and object directories, the Cinema source directory, and ISPC compiler etc.  You'll have to choose one of the LIBNAME assignments, and in ear the bottom where is creates the perlin lib, choose one or the other lines - use the one with 'dynamiclib' for Mac.  Then\
+\
 
-\fs24 \cf0 \
-Sets PATH, LD_LIBRARY_PATH and COLORMAP_DIR - which is where to find the colormaps\
-\
-cd VolViewer\
-\
--- edit 
-\b vv.env
-\b0  to set 
-\b VOLVIEWER_ROOT 
-\b0 to point to the directory containing the VolViewer code and 
-\b OSPRAY_RELEASE
-\b0  to point tot he directory where you built  OSPRay.\
-\
-. vv.env\
-\
-Note - you'll have to twiddle this if you use anything other than bash.\
+\b make
+\b0 \
 \
 \pard\pardeftab720
 
-\b\fs36 \cf0 7.  Create test dataset
+\b\fs36 \cf0 7.  Create Perlin test dataset
 \b0 \
 \pard\pardeftab720
 
@@ -156,31 +319,33 @@ In this step we will (try to) use the Perlin
 \b dump
 \b0  program to create a test dataset\
 \
-cd VolumeViewer\
-mkdir test\
-cd test\
+cd VolViewer/test\
+mkdir perlin\
+cd perlin\
 dump -r 256 256 256\
 \
 This should create two files: 
 \b data.raw
-\b0  containing 256x256x256 flowting point numbers and 
+\b0  containing 256x256x256 floating point numbers and 
 \b data.vol
 \b0  to describe it.\
 \
 \pard\pardeftab720
 
-\b\fs36 \cf0 8. View the test dataset
+\b\fs36 \cf0 8. View the Perlin test dataset
 \b0 \
 \pard\pardeftab720
 
 \fs24 \cf0 \
-viewer \
-File->Open\
-select 
-\b data.vol
-\b0 \
+As above, for looking at the sphere data:\
 \
-You might need to mouse-down and drag in the window to get it to show up.  Now you can use the slicing planes to clip and optionally be visible, and enable and set isovalues.  To see anything inside the volume you'll need to move the slider next to the transfer function way down.\
+
+\b viewer \
+File->Open\
+select data.vol\
+\
+
+\b0 You might need to mouse-down and drag in the window to get it to show up.  Now you can use the slicing planes to clip and optionally be visible, and enable and set isovalues.  To see anything inside the volume you'll need to move the slider next to the transfer function way down.\
 \
 File->Save State\
 save as 
@@ -195,30 +360,10 @@ You'll be back to where you were.   Note that isosurfaces might not show up unti
 \
 \pard\pardeftab720
 
-\b\fs36 \cf0 9.  Test the Cinema library
-\b0 \
-\
+\b\fs36 \cf0 9. Run the Perlin sim and generate time-varying Cinema database\
 \pard\pardeftab720
 
-\fs24 \cf0 For this we use 
-\b test_cinema
-\b0 , for which source is in the 
-\b cinema
-\b0  source directory.   This uses the single timestep dataset built earlier.  By default, this is generates images varying for a 3 values of phi, 3 isovalues and 12 values of theta, for 108 total images, with ancillary data files and info.json making up a Cinema database.\
-\
-test_cinema -s 512 512 test.state\
-\
-
-\b 10.  Run the simulation simulation
-\b0 \
-Now we do the same thing using the perlin noise simulation.   
-\b Note: this will not recreate or overwrite older files of the same name.
-\b0   This is a 
-\i feature
-\i0  so the thing can be restarted.\
-\
-rm *.png *.__data__ info.json\
-sim -s 512 512 -r 256 256 256 -t 0.05 20 test.stat\
-\
-I forget exactly what options are set here, but this will run through 20 time steps, creating a Cinema database.   This will generate a *lot* of frames.\
+\b0\fs24 \cf0 to th\
+Now
+\fs36 \
 }

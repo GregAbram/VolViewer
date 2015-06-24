@@ -4,7 +4,7 @@
 #include "Renderer.h"
 #include "Importer.h"
 
-Renderer::Renderer(bool shared) :
+Renderer::Renderer(int width, int height, bool shared) :
 	volume(shared)
 {
 	renderer = ospNewRenderer("vis_renderer");
@@ -27,11 +27,13 @@ Renderer::Renderer(bool shared) :
 	ospCommit(dmodel);
 	ospSetObject(renderer, "dynamic_model", dmodel);
 
-	
+	window = new CinemaWindow(width, height);
+	camera.setAspect(((float)height) / width);
 }
 
 Renderer::~Renderer()
 {
+	delete window;
 	ospRelease(renderer);
 }
 
@@ -73,12 +75,16 @@ Renderer::LoadVolume(std::string volumeName)
 
   int m = x > y ? x > z ? x : z : y > z ? y : z;
 
-  getCamera().setPos(x/2.0, y/2.0, -(1.5*m - z/2.0));
-  getCamera().setDir(0.0, 0.0, 1.5*m);
+  osp::vec3f eye((x-1)/2.0, (y-1)/2.0, -(3*m - (z-1)/2.0));
+  osp::vec3f center((x-1)/2.0, (y-1)/2.0, (z-1)/2.0);
+  osp::vec3f up(0.0, 1.0, 0.0);
+
+  getCamera().setupFrame(eye, center, up);
   getCamera().commit();
 
 	getLights().commit(getRenderer());
 	getTransferFunction().commit(getRenderer());
+	getTransferFunction().showColors();
 	getSlices().commit(getRenderer(), &volume);
 	getIsos().commit(&volume);
 	renderProperties.commit();
@@ -123,6 +129,11 @@ Renderer::LoadState(std::string statefile, bool with_data)
 	if (doc["State"].HasMember("TransferFunction")) 
 	{
 		getTransferFunction().loadState(doc["State"]["TransferFunction"]);
+		if (doc["State"]["TransferFunction"].HasMember("Colormap"))
+		{
+			getColorMap().loadState(doc["State"]["TransferFunction"]["Colormap"]);
+			getColorMap().commit(getTransferFunction());
+		}
 		getTransferFunction().commit(getRenderer());
 	}
 
@@ -145,9 +156,39 @@ Renderer::LoadState(std::string statefile, bool with_data)
 }
 
 void
+Renderer::SaveState(std::string name)
+{
+  Document doc;
+  doc.Parse("{}");
+
+  Value state(kObjectType);
+
+  state.AddMember("Volume", Value().SetString("volname", doc.GetAllocator()), doc.GetAllocator());
+
+	getCamera().saveState(doc, state);
+	getRenderProperties().saveState(doc, state);
+	getTransferFunction().saveState(doc, state);
+	getColorMap().saveState(doc, state["TransferFunction"]);
+	getSlices().saveState(doc, state);
+	getIsos().saveState(doc, state);
+
+  doc.AddMember("State", state, doc.GetAllocator());
+
+  StringBuffer sbuf;
+  PrettyWriter<StringBuffer> writer(sbuf);
+  doc.Accept(writer);
+
+  std::ofstream out;
+  out.open(name.c_str(), std::ofstream::out);
+  out << sbuf.GetString() << "\n";
+  out.close();
+}
+
+
+void
 Renderer::Render(std::string fname) 
 { 
 	ospCommit(getRenderer());
-  getWindow().render(getRenderer()); 
-	getWindow().save(fname);
+  getWindow()->render(getRenderer()); 
+	getWindow()->save(fname);
 }

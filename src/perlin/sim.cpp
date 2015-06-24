@@ -20,17 +20,22 @@ syntax(char *a)
     cerr << "options:\n";
     cerr << "  -r xres yres zres  overall grid resolution (512x512x512)\n";
     cerr << "  -O octave          noise octave (4)\n";
-    cerr << "  -F frequency       noise frequency (8)\n";
+    cerr << "  -f frequency       noise frequency (8)\n";
     cerr << "  -P persistence     noise persistence (0.5)\n";
     cerr << "  -t dt nt           time series delta, number of timesteps (0, 1)\n";
     cerr << "  -s w h           	size of output images\n";
+		cerr << "  -F                 save state files (first time step)\n";
+		cerr << "  -D                 save each time step volume\n";
+#if WITH_OPENGL == TRUE
+		cerr << "  -S                 show images as they are rendered\n";
+#endif
     exit(1);
 }
 
 CameraVariable *
 cinema_setup(Renderer& renderer, Cinema& cinema)
 {
-#if 1
+#if 0
 	vector<int> phis;
 	int d = 20 / 2;
 	for (int i = 0; i < 3; i++)
@@ -51,7 +56,7 @@ cinema_setup(Renderer& renderer, Cinema& cinema)
 	CameraVariable *camvar = new CameraVariable(phis, thetas);
 	cinema.AddVariable(camvar);
 
-#if 1
+#if 0
 	vector<int> clips;
 	clips.push_back(0);
 
@@ -69,7 +74,7 @@ cinema_setup(Renderer& renderer, Cinema& cinema)
 	cinema.AddVariable(clip);
 #endif
 
-#if 1
+#if 0
 	vector<int> isovalues;
 	for (int i = 0; i < 20; i++)
 		isovalues.push_back(20 + (int)((i / 19.0) * 60));
@@ -107,6 +112,11 @@ int main(int argc, char *argv[])
   int   nt = 1;
 	char *filename = NULL;
 	CameraVariable *camvar = NULL;
+	bool saveState = false;
+	bool dump = false;
+#if WITH_OPENGL == TRUE
+  bool show = false;
+#endif
 
   for (int i = 1; i < argc; i++)
     if (argv[i][0] == '-') 
@@ -115,10 +125,15 @@ int main(int argc, char *argv[])
 				case 'r': xsz = atoi(argv[++i]);
 									ysz = atoi(argv[++i]);
 									zsz = atoi(argv[++i]); break;
+#if WITH_OPENGL == TRUE
+				case 'S': show = true; break;
+#endif
+				case 'F': saveState = true; break;
+				case 'D': dump = true; break;
 				case 's': width = atoi(argv[++i]);
 									height = atoi(argv[++i]); break;
 				case 'P': ispc::SetPersistence(atof(argv[++i])); break;
-				case 'F': ispc::SetFrequency(atof(argv[++i])); break;
+				case 'f': ispc::SetFrequency(atof(argv[++i])); break;
 				case 'O': ispc::SetOctaveCount(atoi(argv[++i])); break;
 				case 't': delta_t = atof(argv[++i]); nt = atoi(argv[++i]); break;
 				default:  syntax(argv[0]);
@@ -128,10 +143,18 @@ int main(int argc, char *argv[])
 		else
 			syntax(argv[0]);
 
-	// Create renderer with shared volume
-	Renderer renderer(true);
 
-	renderer.getWindow().resize(width, height);
+#if 0
+	// Create renderer with shared volume
+	Renderer renderer(width, height, true);
+#else
+	Renderer renderer(width, height, false);
+#endif
+
+#if WITH_OPENGL == TRUE
+  renderer.getWindow()->setShow(show);
+#endif
+
 	renderer.LoadState(std::string(filename), false);
 	camvar = cinema_setup(renderer, cinema);
 
@@ -147,13 +170,37 @@ int main(int argc, char *argv[])
   for (int t = 0; t < nt; t++)
   {
 		ispc::PerlinT(scalars, xsz, ysz, zsz, t*delta_t);
+
+#if 0
+#if 0
 		renderer.getVolume()->commit(true);
 		renderer.getVolume()->ResetMinMax();
+#else
+		renderer.getVolume()->SetVoxels(scalars);
+		renderer.getVolume()->commit();
+#endif
 
 		camvar->ResetCount();
+
+		cinema.setSaveState(saveState && (t == 0));
 		cinema.Render(renderer, t);
 
 		std::cerr << "timestep " << t << " done\n";
+
+#endif
+		if (dump)
+		{
+			char tt[256];
+			sprintf(tt, "data_%05d.raw", t);
+			ofstream f("data.raw", ofstream::binary);
+			f.write((char *)scalars, np*sizeof(float));
+			f.close();
+
+			sprintf(tt, "data_%05d.vol", t);
+			ofstream v(tt);
+			v << xsz << " " << ysz << " " << zsz << " float data.raw\n";
+			v.close();
+		}
 	}
 
 	cinema.WriteInfo();

@@ -3,7 +3,7 @@
 #include <ospray/ospray.h>
 #include <vector>
 
-#include "Window.h"
+#include "CinemaWindow.h"
 #include "Camera.h"
 #include "Lights.h"
 #include "TransferFunction.h"
@@ -20,10 +20,10 @@ class Renderer
 {
 public:
 
-	Renderer(bool shared_data);
+	Renderer(int, int, bool shared_data);
 	~Renderer();
 
-	Window 		 			 &getWindow() 					{return window;}
+	CinemaWindow 		 *getWindow() 					{return window;}
 	Camera 		 			 &getCamera() 					{return camera;}
 	ColorMap	 			 &getColorMap() 				{return colorMap;}
 	Lights 		 			 &getLights() 					{return lights;}
@@ -32,6 +32,7 @@ public:
 	TransferFunction &getTransferFunction() {return transferFunction;}
 	OSPRenderer 		 &getRenderer() 			  {return renderer;}
 	MyVolume				 *getVolume()						{return &volume;}
+	RenderProperties &getRenderProperties()	{return renderProperties;}
 
 
 	// Use this to load either a state file (with its data)
@@ -45,6 +46,9 @@ public:
 	// Use this to load a volume and set up a default camera
 	void LoadVolume(std::string);
 
+	// Save current state
+	void SaveState(std::string);
+
 	// Call this when you've set up shared volume data
 	void CommitVolume();
 
@@ -55,7 +59,7 @@ private:
   // Use this to load a volume without changing other state (e.g. camera)
 	void LoadDataFromFile(std::string);
 	
-	Window   					window;
+	CinemaWindow 			*window;
 	Camera	 				 	camera;
 	Lights   				 	lights;
 	TransferFunction 	transferFunction;

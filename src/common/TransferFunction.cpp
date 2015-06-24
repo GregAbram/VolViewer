@@ -60,3 +60,38 @@ load_colormap_directory()
 
   return colormaps;
 }
+
+void
+TransferFunction::commit(OSPRenderer& r)
+{
+	ospSet2f(tf, "valueRange", minv, maxv);
+
+	float xmin = alphas.front().x;
+	float xmax = alphas.back().x;
+
+	vector<float> interpolated;
+
+	int i0 = 0, i1 = 1;
+	for (int i = 0; i < 256; i++)
+	{
+		float x = xmin + (i / (255.0))*(xmax - xmin);
+		if (x > xmax) x = xmax;
+		while (alphas[i1].x < x)
+			i0++, i1++;
+		float d = (x - alphas[i0].x) / (alphas[i1].x - alphas[i0].x);
+		interpolated.push_back(scale * (alphas[i0].y + d*(alphas[i1].y - alphas[i0].y)));
+	}
+
+	OSPData oAlphas = ospNewData(interpolated.size(), OSP_FLOAT, interpolated.data());
+	ospSetData(tf, "opacities", oAlphas);
+
+	OSPData oColors = ospNewData(colors.size(), OSP_FLOAT3, colors.data());
+	ospSetData(tf, "colors", oColors);
+
+
+	ospSet1i(r, "doVolumeRendering", doVolumeRendering ? 1 : 0);
+
+	ospCommit(tf);
+}
+
+

@@ -370,6 +370,9 @@ void CameraVariable::RenderShot(Renderer& r, string s, Document& doc)
 {
 	struct stat info;
 
+	if (cinema->getSaveState())
+		r.SaveState((s + ".state").c_str());
+
 	if (stat((s + ".png").c_str(), &info))
 	{
 		r.getSlices().commit(r.getRenderer(), r.getVolume());
@@ -454,10 +457,9 @@ string VolumeRenderingVariable::GatherTemplate(string s, Document& doc)
 
 //===================================================
 
-Cinema::Cinema(int *argc, const char **argv)
+Cinema::Cinema(int *argc, const char **argv) : variableStack(NULL), saveState(false)
 {
   ospInit(argc, (const char **)argv);
-	variableStack = NULL;
 }
 
 Cinema::~Cinema()
@@ -474,6 +476,7 @@ void
 Cinema::AddVariable(Variable *v)
 {
 	v->setDown(variableStack);
+	v->setCinema(this);
 	variableStack = v;
 }
 
