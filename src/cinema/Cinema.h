@@ -1,9 +1,6 @@
 #include <vector>
 #include "ospray/include/ospray/ospray.h"
-
-#include "rapidjson/document.h"
-#include "rapidjson/prettywriter.h"
-#include "rapidjson/stringbuffer.h"
+#include "../common/common.h"
 
 #include "Renderer.h"
 

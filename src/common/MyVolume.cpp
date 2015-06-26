@@ -2,7 +2,7 @@
 
 MyVolume::MyVolume(bool s) :
 		shared(s), nIso(0), isoValues(NULL),
-		voxels(NULL), mod(true), 
+		voxels(NULL), mod(true), data(NULL),
 		type("none"), x(-1)
 {
 	ospv = s ? ospNewVolume("shared_structured_volume") : ospNewVolume("block_bricked_volume");
@@ -22,10 +22,11 @@ MyVolume::commit(bool do_anyway)
 	ospCommit(ospv);
 	if (mod | do_anyway)
 	{
-		OSPData d;
-		if (ospGetData(ospv, "voxelData", &d))
-			ospCommit(d);
-		mod = false;
+		if (data)
+		{
+			ospCommit(data);
+			mod = false;
+		}
 	}
 }
 
@@ -111,6 +112,7 @@ MyVolume:: SetVoxels(void*  _v)
 		voxels = _v;
 		size_t k = x * y * z;
 		data = ospNewData(k, type == "float" ? OSP_FLOAT : OSP_UCHAR, voxels, OSP_DATA_SHARED_BUFFER);
+		ospCommit(data);
 		ospSetObject(ospv, "voxelData", data);
 	}
 	else

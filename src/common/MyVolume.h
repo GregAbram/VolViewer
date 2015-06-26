@@ -9,11 +9,6 @@ public:
 		~MyVolume();
 		void commit(bool do_anyway = false);
 		OSPVolume getOSPVolume();
-			
-		// The following can be used in the case of a shared volume
-		// so that the app can change the contents.  In the case of an
-		// unshared volume, its off in ispc land and can't be changed
-		// without storing a new set of voxels.
 		
 		void ResetMinMax();
 		void SetDimensions(int _x, int _y, int _z);

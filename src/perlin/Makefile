@@ -1,19 +1,24 @@
-ISPC=/Users/gda/OSPRay/ispc-v1.8.1-osx/ispc
-OSPRAY_SRCDIR=/Users/gda/OSPRay/ospray
-OSPRAY_OBJDIR=/Users/gda/OSPRay/obj
-CINEMA=/Users/gda/VolViewer/src
+ifdef WITH_ISPC
+	USE_ISPC=1
+else
+	USE_ISPC=0
+endif
+
+ISPC=/work/01249/gda/maverick/VolViewer/ispc-v1.8.1-linux/ispc
+OSPRAY_SRCDIR=/work/01249/gda/maverick/VolViewer/OSPRay/
+OSPRAY_OBJDIR=/work/01249/gda/maverick/VolViewer/OSPRay/obj
+CINEMA=/work/01249/gda/maverick/VolViewer/VolViewer/src
 DEBUG=-g -DDEBUG
 CXX=g++ ${DEBUG}
 
 # Only if Cinema library was built with X11/OpenGL window for showing frames as they are rendered
 
-GLX=-L/opt/X11/lib -lX11 -lgl
+GLX=-L/opt/X11/lib -lX11 -lGL
 
 # Choose one of these depending on mac (.dylib) or linux (.so)
 
-# LIBNAME=libperlin.so
-LIBNAME=libperlin.dylib
-
+LIBNAME=libperlin.so
+# LIBNAME=libperlin.dylib
 
 OSPRAY_INCDIRS = \
 	-I${OSPRAY_SRCDIR} \
@@ -44,26 +49,33 @@ CINEMA_LIBS = -lcinema  -lcommon
 
 LIBS =  ${OSPRAY_LIBS} ${CINEMA_LIBS} ${GLX} -lpng -lpthread
 
-all: sim dump
+all: sim dump tdump
+
+%.o : %.cpp
+	${CXX} ${INCDIRS} -DWITH_ISPC=$(USE_ISPC) -fPIC -DDEBUG -g -fPIC -c -o $*.o $*.cpp
 
 sim: sim.o ${LIBNAME}
 	${CXX} -o sim sim.o -lperlin ${LIBDIRS} ${LIBS} 
 
+tdump: tdump.o ${LIBNAME}
+	${CXX} -o tdump tdump.o -lperlin ${LIBDIRS} ${LIBS}
+
 dump: dump.o ${LIBNAME}
 	${CXX} -o dump dump.o -lperlin ${LIBDIRS} ${LIBS}
 
-perlin.io perlin_ispc.h: perlin.ispc 
+ifdef WITH_ISPC
+${LIBNAME}:  perlin.ispc
 	${ISPC} --arch=x86-64 --pic -O3 --woff --target=avx --addressing=32 \
 					--cpu=corei7-avx --opt=fast-math \
 					-h perlin_ispc.h -MMM perlin_dev.idep -o perlin.io perlin.ispc
+	${CXX} -fPIC -DWITH_ISPC=$(USE_ISPC) -DDEBUG -g -shared -Wl,-soname,${LIBNAME} -o ${LIBNAME} perlin.io tasksys.cpp
+	# ${CXX} -DWITH_ISPC=$(ISPC) -dynamiclib -o ${LIBNAME} perlin.io tasksys.cpp ${LIBDIRS} ${LIBS}
+else
+${LIBNAME}: perlin.cpp
+	${CXX} -fPIC -DDEBUG -DWITH_ISPC=$(USE_ISPC) -g -shared -Wl,-soname,${LIBNAME} -o ${LIBNAME} perlin.cpp tasksys.cpp
+	# ${CXX} -dynamiclib -DWITH_ISPC=$(USE_ISPC) -o ${LIBNAME} perlin.io tasksys.cpp ${LIBDIRS} ${LIBS}
+endif
 
-%.o : %.cpp
-	${CXX} ${INCDIRS} -fPIC -DDEBUG -g -fPIC -c -o $*.o $*.cpp
-
-${LIBNAME}: perlin.io 
-	# ${CXX} -fPIC -DDEBUG -g -shared -Wl,-soname,${LIBNAME} -o ${LIBNAME} perlin.io tasksys.cpp
-	${CXX} -dynamiclib -o ${LIBNAME} perlin.io tasksys.cpp ${LIBDIRS} ${LIBS}
-
-sim.o : perlin_ispc.h
-dump.o : perlin_ispc.h
-clean: ; rm -rf *.io *.o *.idep *_ispc.h ${LIBNAME} sim dump
+sim.o : ${LIBNAME}
+dump.o : ${LIBNAME}
+clean: ; rm -rf *.io *.o *.idep *_ispc.h ${LIBNAME} sim dump tdump

@@ -8,8 +8,7 @@
 #include <math.h>
 
 #include "Cinema.h"
-
-#include "perlin_ispc.h"
+#include "perlin.h"
 
 using namespace std;
 
@@ -132,9 +131,9 @@ int main(int argc, char *argv[])
 				case 'D': dump = true; break;
 				case 's': width = atoi(argv[++i]);
 									height = atoi(argv[++i]); break;
-				case 'P': ispc::SetPersistence(atof(argv[++i])); break;
-				case 'f': ispc::SetFrequency(atof(argv[++i])); break;
-				case 'O': ispc::SetOctaveCount(atoi(argv[++i])); break;
+				case 'P': SetPersistence(atof(argv[++i])); break;
+				case 'f': SetFrequency(atof(argv[++i])); break;
+				case 'O': SetOctaveCount(atoi(argv[++i])); break;
 				case 't': delta_t = atof(argv[++i]); nt = atoi(argv[++i]); break;
 				default:  syntax(argv[0]);
 			}
@@ -144,7 +143,7 @@ int main(int argc, char *argv[])
 			syntax(argv[0]);
 
 
-#if 0
+#if 1
 	// Create renderer with shared volume
 	Renderer renderer(width, height, true);
 #else
@@ -169,16 +168,10 @@ int main(int argc, char *argv[])
 
   for (int t = 0; t < nt; t++)
   {
-		ispc::PerlinT(scalars, xsz, ysz, zsz, t*delta_t);
+		PerlinT(scalars, xsz, ysz, zsz, t*delta_t);
+		fprintf(stderr, "%f\n", scalars[12345]);
 
-#if 0
-#if 0
 		renderer.getVolume()->commit(true);
-		renderer.getVolume()->ResetMinMax();
-#else
-		renderer.getVolume()->SetVoxels(scalars);
-		renderer.getVolume()->commit();
-#endif
 
 		camvar->ResetCount();
 
@@ -187,19 +180,20 @@ int main(int argc, char *argv[])
 
 		std::cerr << "timestep " << t << " done\n";
 
-#endif
 		if (dump)
 		{
-			char tt[256];
-			sprintf(tt, "data_%05d.raw", t);
-			ofstream f("data.raw", ofstream::binary);
+			char rawname[256];
+			sprintf(rawname, "data_%05d.raw", t);
+			ofstream f(rawname, ofstream::binary);
 			f.write((char *)scalars, np*sizeof(float));
 			f.close();
 
-			sprintf(tt, "data_%05d.vol", t);
-			ofstream v(tt);
-			v << xsz << " " << ysz << " " << zsz << " float data.raw\n";
+			char volname[256];
+			sprintf(volname, "data_%05d.vol", t);
+			ofstream v(volname);
+			v << xsz << " " << ysz << " " << zsz << " float " << rawname << "\n";
 			v.close();
+			std::cerr << "wrote: " << volname << " " << rawname << "\n";
 		}
 	}
 
