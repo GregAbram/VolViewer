@@ -63,7 +63,7 @@ float GradientNoise3D (float fx, float fy, float fz, int ix, int iy, int iz, int
   // Randomly generate a gradient vector given the integer coordinates of the
   // input value.  This implementation generates a random number and uses it
   // as an index into a normalized-vector lookup table.
-  size_t vectorIndex = (
+  int vectorIndex = (
       X_NOISE_GEN    * ix
     + Y_NOISE_GEN    * iy
     + Z_NOISE_GEN    * iz
@@ -94,18 +94,11 @@ float GradientCoherentNoise3D (float x, float y, float z, int seed, int noiseQua
 {
   // Create a unit-length cube aligned along an integer boundary.  This cube
   // surrounds the input point.
-	int i;
-
-	i = (int)x;
-  int x0 = (x > 0.0 ? i : i - 1);
+  int x0 = (x > 0.0? (int)x: (int)x - 1);
   int x1 = x0 + 1;
-
-	i = (int)y;
-  int y0 = (y > 0.0 ? i : i - 1);
+  int y0 = (y > 0.0? (int)y: (int)y - 1);
   int y1 = y0 + 1;
-
-	i = (int)z;
-  int z0 = (z > 0.0 ? i : i - 1);
+  int z0 = (z > 0.0? (int)z: (int)z - 1);
   int z1 = z0 + 1;
 
   // Map the difference between the coordinates of the input value and the
@@ -182,44 +175,24 @@ float GradientNoise4D (float fx, float fy, float fz, float ft, int ix, int iy, i
   // Now compute the dot product of the gradient vector with the distance
   // vector.  The resulting value is gradient noise.  Apply a scaling value
   // so that this noise value ranges from -1.0 to 1.0.
-	float n = ((xvGradient * xvPoint)
-    				+ (yvGradient * yvPoint)
-    				+ (zvGradient * zvPoint)
-    				+ (tvGradient * tvPoint)) * 2.12;
-
-#if 0
-	if (n == 0.0)
-		print("GN4D ZERO %\n %\n %\n", ix, iy, iz);
-	else
-		print("GN4D NOT ZERO %\n %\n %\n", ix, iy, iz);
-#endif
-				  
-	return n;
+  return ((xvGradient * xvPoint)
+    + (yvGradient * yvPoint)
+    + (zvGradient * zvPoint)
+    + (tvGradient * tvPoint)) * 2.12;
 }
 
 float GradientCoherentNoise4D (float x, float y, float z, float t, int seed, int noiseQuality)
 {
   // Create a unit-length cube aligned along an integer boundary.  This cube
   // surrounds the input point.
-	int i;
-
-	i = (int)x;
-  int x0 = (x > 0.0 ? i : i - 1);
+  int x0 = (x > 0.0? (int)x: (int)x - 1);
   int x1 = x0 + 1;
-
-	i = (int)y;
-  int y0 = (y > 0.0 ? i : i - 1);
+  int y0 = (y > 0.0? (int)y: (int)y - 1);
   int y1 = y0 + 1;
-
-	i = (int)z;
-  int z0 = (z > 0.0 ? i : i - 1);
+  int z0 = (z > 0.0? (int)z: (int)z - 1);
   int z1 = z0 + 1;
-
-	i = (int)t;
-  int t0 = (t > 0.0 ? i : i - 1);
+  int t0 = (t > 0.0? (int)t: (int)t - 1);
   int t1 = t0 + 1;
-
-	// print("X % % %\nY % % %\nZ % % %\nT % % %\n", x, x0, x1, y, y0, y1, z, z0, z1, t, t0, t1);
 
   // Map the difference between the coordinates of the input value and the
   // coordinates of the cube's outer-lower-left vertex onto an S-curve.
@@ -252,70 +225,38 @@ float GradientCoherentNoise4D (float x, float y, float z, float t, int seed, int
   float n0, n1, ix0, ix1, iy0, iy1;
 
   n0   = GradientNoise4D (x, y, z, t, x0, y0, z0, t0, seed);
-	// print/g("n0 %\n", n0);
   n1   = GradientNoise4D (x, y, z, t, x1, y0, z0, t0, seed);
-	// print/g("n1 %\n", n1);
-  ix0  = LinearInterp (n0, n1, xs);	
-	// print/g("ix0 %\n", ix0);
-  n0   = GradientNoise4D (x, y, z, t, x0, y1, z0, t0, seed);
-	// print/g("n0 %\n", n0);
-  n1   = GradientNoise4D (x, y, z, t, x1, y0, z0, t0, seed);
-	// print/g("n1 %\n", n1);
-  ix1  = LinearInterp (n0, n1, xs);
-	// print/g("ix1 %\n", ix1);
-  iy0  = LinearInterp (ix0, ix1, ys);
-	// print/g("iy0 %\n", iy0);
-  n0   = GradientNoise4D (x, y, z, t, x0, y0, z1, t0, seed);
-	// print/g("n0 %\n", n0);
-  n1   = GradientNoise4D (x, y, z, t, x1, y0, z1, t0, seed);
-	// print/g("n1 %\n", n1);
   ix0  = LinearInterp (n0, n1, xs);
-	// print/g("ix0 %\n", ix0);
-  n0   = GradientNoise4D (x, y, z, t, x0, y1, z1, t0, seed);
-	// print/g("n0 %\n", n0);
-  n1   = GradientNoise4D (x, y, z, t, x1, y1, z1, t0, seed);
-	// print/g("n1 %\n", n1);
+  n0   = GradientNoise4D (x, y, z, t, x0, y1, z0, t0, seed);
+  n1   = GradientNoise4D (x, y, z, t, x1, y1, z0, t0, seed);
   ix1  = LinearInterp (n0, n1, xs);
-	// print/g("ix1 %\n", ix1);
+  iy0  = LinearInterp (ix0, ix1, ys);
+  n0   = GradientNoise4D (x, y, z, t, x0, y0, z1, t0, seed);
+  n1   = GradientNoise4D (x, y, z, t, x1, y0, z1, t0, seed);
+  ix0  = LinearInterp (n0, n1, xs);
+  n0   = GradientNoise4D (x, y, z, t, x0, y1, z1, t0, seed);
+  n1   = GradientNoise4D (x, y, z, t, x1, y1, z1, t0, seed);
+  ix1  = LinearInterp (n0, n1, xs);
   iy1  = LinearInterp (ix0, ix1, ys);
-	// print/g("iy1 %\n", ix1);
   float iz0 = LinearInterp (iy0, iy1, zs);
-	// print/g("iz0 %\n", iz0);
 
   n0   = GradientNoise4D (x, y, z, t, x0, y0, z0, t1, seed);
-	// print/g("n0 %\n", n0);
   n1   = GradientNoise4D (x, y, z, t, x1, y0, z0, t1, seed);
-	// print/g("n1 %\n", n0);
   ix0  = LinearInterp (n0, n1, xs);
-	// print/g("ix0 %\n", ix0);
   n0   = GradientNoise4D (x, y, z, t, x0, y1, z0, t1, seed);
-	// print/g("n0 %\n", n0);
   n1   = GradientNoise4D (x, y, z, t, x1, y1, z0, t1, seed);
-	// print/g("n1 %\n", n1);
   ix1  = LinearInterp (n0, n1, xs);
-	// print/g("ix1 %\n", ix1);
   iy0  = LinearInterp (ix0, ix1, ys);
-	// print/g("iy0 %\n", iy0);
   n0   = GradientNoise4D (x, y, z, t, x0, y0, z1, t1, seed);
-	// print/g("n0 %\n", n0);
   n1   = GradientNoise4D (x, y, z, t, x1, y0, z1, t1, seed);
-	// print/g("n1 %\n", n0);
   ix0  = LinearInterp (n0, n1, xs);
-	// print/g("ix0 %\n", ix0);
   n0   = GradientNoise4D (x, y, z, t, x0, y1, z1, t1, seed);
-	// print/g("n0 %\n", n0);
   n1   = GradientNoise4D (x, y, z, t, x1, y1, z1, t1, seed);
-	// print/g("n1 %\n", n1);
   ix1  = LinearInterp (n0, n1, xs);
-	// print/g("ix1 %\n", ix1);
   iy1  = LinearInterp (ix0, ix1, ys);
-	// print/g("iy1 %\n", iy1);
   float iz1 = LinearInterp (iy0, iy1, zs);
-	// print/g("iz1 %\n", iz1);
 
-  float f = LinearInterp(iz0, iz1, ts);
-	// print/g("ts %\nf %\n", ts, f);
-  return f;
+  return LinearInterp(iz0, iz1, ts);
 
 }
 
@@ -363,49 +304,41 @@ float Sample4D(float x, float y, float z, float t)
   float nx, ny, nz, nt;
   int seed;
 
-  float fx = x * m_frequency;
-  float fy = y * m_frequency;
-  float fz = z * m_frequency;
-  float ft = t * m_frequency;
+  x *= m_frequency;
+  y *= m_frequency;
+  z *= m_frequency;
+  t *= m_frequency;
 
   for (int curOctave = 0; curOctave < m_octaveCount; curOctave++) {
 
     // Make sure that these floating-point values have the same range as a 32-
     // bit integer so that we can pass them to the coherent-noise functions.
-    nx = MakeInt32Range (fx);
-    ny = MakeInt32Range (fy);
-    nz = MakeInt32Range (fz);
-    nt = MakeInt32Range (ft);
-
-		// print("nx %\nny %\nnz %\n", nx, ny, nz);
+    nx = MakeInt32Range (x);
+    ny = MakeInt32Range (y);
+    nz = MakeInt32Range (z);
+    nt = MakeInt32Range (t);
 
     // Get the coherent-noise value from the input value and add it to the
     // final result.
     seed = (m_seed + curOctave) & 0xffffffff;
     signal = GradientCoherentNoise4D (nx, ny, nz, nt, seed, m_noiseQuality);
-		// print("sig % %\n", curOctave, signal);
     value += signal * curPersistence;
 
     // Prepare the next octave.
-    fx *= m_lacunarity;
-    fy *= m_lacunarity;
-    fz *= m_lacunarity;
-    ft *= m_lacunarity;
+    x *= m_lacunarity;
+    y *= m_lacunarity;
+    z *= m_lacunarity;
+    t *= m_lacunarity;
     curPersistence *= m_persistence;
   }
-
-#if 0
-	if (value == 0)
-		print ("SHIT\nX %\nY %\nZ %\n", x, y, z);
-#endif
 
   return value;
 }
 
-task void Perlin_task(uniform float buf[], uniform size_t xsz, uniform size_t ysz, uniform size_t zsz, uniform size_t xstep, uniform size_t ystep, uniform size_t zstep, uniform float d, uniform size_t span)
+task void Perlin_task(uniform float buf[], uniform int xsz, uniform int ysz, uniform int zsz, uniform int xstep, uniform int ystep, uniform int zstep, uniform float d, uniform int span)
 {
-	uniform size_t xs = taskIndex * span;
-  uniform size_t xe = min((taskIndex+1)*span, xsz);
+	uniform int xs = taskIndex * span;
+  uniform int xe = min((taskIndex+1)*span, xsz);
 
 	foreach (ix = xs ... xe, iy = 0 ... ysz, iz = 0 ... zsz)
 		buf[ix*xstep + iy*ystep + iz*zstep] = Sample3D(ix*d, iy*d, iz*d);
@@ -426,31 +359,15 @@ export void Perlin(uniform float buf[], uniform int xsz, uniform int ysz, unifor
 task void PerlinT_task(uniform float buf[], uniform int xsz, uniform int ysz, uniform int zsz, uniform float t, uniform int xstep, uniform int ystep, uniform int zstep, uniform float d, uniform int span)
 {
 	uniform int xs = taskIndex * span;
-	uniform int xe = min((taskIndex+1)*span, xsz);
-
-	size_t a = (size_t)xstep, b = (size_t)ystep, c = (size_t)zstep;
+  uniform int xe = min((taskIndex+1)*span, xsz);
 
 	foreach (ix = xs ... xe, iy = 0 ... ysz, iz = 0 ... zsz)
-	{
-		float f = Sample4D(ix*d, iy*d, iz*d, t);
-		size_t off = ix*a + iy*b + iz*c;
-#if 1
-		float *p = buf + off;
-		*p = f;
-#else
-		buf[off] = f;
-#endif
-	}
+		buf[ix*xstep + iy*ystep + iz*zstep] = Sample4D(ix*d, iy*d, iz*d, t);
 }
 	
 export void PerlinT(uniform float buf[], uniform int xsz, uniform int ysz, uniform int zsz, uniform float t)
 {
-#if 0
-	float f = Sample4D(0.63632, 0.87383, 0.82772, 0.0);
-	// print("F %\n", f);
-#else
 	uniform float d = 1.0 / max(max(xsz, ysz), zsz);
-	print("D %\n", d);
 
 	uniform int xstep = ysz*zsz;
 	uniform int ystep = zsz;
@@ -458,6 +375,5 @@ export void PerlinT(uniform float buf[], uniform int xsz, uniform int ysz, unifo
 
 	uniform int span = 32;
 	launch[(xsz + (span-1))/span] PerlinT_task(buf, xsz, ysz, zsz, t, xstep, ystep, zstep, d, span);
-#endif
 }
 	
