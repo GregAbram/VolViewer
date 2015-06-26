@@ -1,9 +1,10 @@
 #include "CinemaWindow.h"
 #include "mypng.h"
+#include "cinema_cfg.h"
 
 #include <iostream>
 
-#if WITH_OPENGL == TRUE
+#if WITH_DISPLAY_WINDOW
 
 #define GL_GLEXT_PROTOTYPES
 #include <X11/Xlib.h>
@@ -70,7 +71,7 @@ void CinemaWindow::save(std::string filename)
 {
 	unsigned int *mappedFrameBuffer = (unsigned int *)ospMapFrameBuffer(frameBuffer);
 
-#if WITH_OPENGL == TRUE
+#if WITH_DISPLAY_WINDOW
 	if (show && !dpy)
 		show = createDisplay();
 

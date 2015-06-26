@@ -127,12 +127,10 @@ SlicePlaneVariable::SlicePlaneVariable(string n, vector<int> c, vector<int> v, v
 			axes.push_back(2);
 	}
 
-	clip  	= c;
-	visible = v;
-	flip    = f;
-	values  = vals;
-	for (int i = 0; i < values.size(); i++)
-		std::cerr << "SPV: " << i << " " << values[i] << "\n";
+	clips  	 = c;
+	visibles = v;
+	flips    = f;
+	values   = vals;
 }
 
 SlicePlaneVariable::SlicePlaneVariable(string n, vector<int> v, vector<int> f, vector<int> vals) : Variable(n)
@@ -148,88 +146,94 @@ SlicePlaneVariable::SlicePlaneVariable(string n, vector<int> v, vector<int> f, v
 			axes.push_back(2);
 	}
 
-	visible = v;
-	flip    = f;
-	values  = vals;
+	visibles = v;
+	flips    = f;
+	values   = vals;
 }
 
 void  SlicePlaneVariable::Render(Renderer& r, string s, Document& doc)
 {
-	for (int i = 0; i < clip.size(); i++)
+	for (vector<int>::iterator ai = axes.begin(); ai != axes.end(); ai++)
 	{
+		int axis = *ai;
+
 		string s1;
-
-		std::cerr << "CLIP SET TO " << clip[i] << "\n";
-		for (int i = 0; i < axes.size(); i++)
-			r.getSlices().SetClip(axes[i], clip[i]);
-
-		if (clip.size() > 1)
+		if (axes.size() > 1)
 		{
 			char buf[256];
-			sprintf(buf, "%s_%d", s.c_str(), clip[i]);
+			sprintf(buf, "%s_%d", s.c_str(), axis);
 			s1 = string(buf);
-			SetIntAttr(doc, (name + "Slice").c_str(), clip[i]);
+			SetIntAttr(doc, (name + "Axis").c_str(), axis);
 		}
 		else
 			s1 = s;
 
-		for (int j = 0; j < visible.size(); j++)
+		for (vector<int>::iterator ci = clips.begin(); ci != clips.end(); ci++)
 		{
+			int clip = *ci;
+			r.getSlices().SetClip(axis, clip);
+
 			string s2;
-
-			for (int i = 0; i < axes.size(); i++)
-				r.getSlices().SetVisible(axes[i], visible[j]);
-			std::cerr << "VISIBLE SET TO " << visible[j] << "\n";
-
-			if (visible.size() > 1)
+			if (clips.size() > 1)
 			{
 				char buf[256];
-				sprintf(buf, "%s_%d", s1.c_str(), visible[j]);
+				sprintf(buf, "%s_%d", s1.c_str(), clip);
 				s2 = string(buf);
-				SetIntAttr(doc, (name + "Visible").c_str(), visible[j]); 
+				SetIntAttr(doc, (name + "Clip").c_str(), clip);
 			}
-			else 
+			else
 				s2 = s1;
 
-			for (int k = 0; k < flip.size(); k++)
+			for (vector<int>::iterator vi = visibles.begin(); vi != visibles.end(); vi++)
 			{
+				int visibility = *vi;
+				r.getSlices().SetVisible(axis, visibility);
+
 				string s3;
-
-				for (int i = 0; i < axes.size(); i++)
-					r.getSlices().SetFlip(axes[i], flip[k] == 1);
-
-				std::cerr << "FLIP SET TO " << flip[k] << "\n";
-
-				if (flip.size() > 1)
+				if (visibles.size() > 1)
 				{
 					char buf[256];
-					sprintf(buf, "%s_%d", s2.c_str(), flip[k]);
+					sprintf(buf, "%s_%d", s2.c_str(), visibility);
 					s3 = string(buf);
-					SetIntAttr(doc, (name + "Flip").c_str(), flip[k]); 
+					SetIntAttr(doc, (name + "Visibility").c_str(), visibility);
 				}
-				else 
+				else
 					s3 = s2;
 
-				for (int l = 0; l < values.size(); l++)
+				for (vector<int>::iterator fi = flips.begin(); fi != flips.end(); fi++)
 				{
+					int flip = *fi;
+					r.getSlices().SetFlip(axis, flip == 1);
+
 					string s4;
-
-					for (int i = 0; i < axes.size(); i++)
-						r.getSlices().SetValue(axes[i], values[l]);
-
-					std::cerr << "VALUE SET TO " << values[l] << "\n";
-
-					if (values.size() > 1)
+					if (flips.size() > 1)
 					{
 						char buf[256];
-						sprintf(buf, "%s_%d", s3.c_str(), values[l]);
+						sprintf(buf, "%s_%d", s3.c_str(), flip);
 						s4 = string(buf);
-						SetIntAttr(doc, (name + "Value").c_str(), values[l]);
+						SetIntAttr(doc, (name + "Flip").c_str(), flip);
 					}
-					else 
+					else
 						s4 = s3;
-	
-					RenderDown(r, s4, doc);
+
+					for (vector<int>::iterator vi = values.begin(); vi != values.end(); vi++)
+					{
+						int value = *vi;
+						r.getSlices().SetValue(axis, value);
+
+						string s5;
+						if (values.size() > 1)
+						{
+							char buf[256];
+							sprintf(buf, "%s_%d", s4.c_str(), value);
+							s5 = string(buf);
+							SetIntAttr(doc, (name + "Value").c_str(), value);
+						}
+						else
+							s5 = s4;
+
+						RenderDown(r, s5, doc);
+					}
 				}
 			}
 		}
@@ -238,22 +242,28 @@ void  SlicePlaneVariable::Render(Renderer& r, string s, Document& doc)
 
 string SlicePlaneVariable::GatherTemplate(string s, Document &doc)
 {
-	if (clip.size() > 1)
+	if (axes.size() > 1)
+	{
+		s = s + "_{" + name + "Axis}";
+		AddIntRangeArg(doc, name + "Axis", axes);
+	}
+
+	if (clips.size() > 1)
 	{
 		s = s + "_{" + name + "Clip}";
-		AddIntRangeArg(doc, name + "Clip", clip);
+		AddIntRangeArg(doc, name + "Clip", clips);
 	}
 
-	if (visible.size() > 1)
+	if (visibles.size() > 1)
 	{
-		s = s + "_{" + name + "Visible}";
-		AddIntRangeArg(doc, name + "Visible", visible);
+		s = s + "_{" + name + "Visiblity}";
+		AddIntRangeArg(doc, name + "Visiblity", visibles);
 	}
 
-	if (flip.size() > 1)
+	if (flips.size() > 1)
 	{
 		s = s + "_{" + name + "Flip}";
-		AddIntRangeArg(doc, name + "Flip", flip);
+		AddIntRangeArg(doc, name + "Flip", flips);
 	}
 
 	if (values.size() > 1)
@@ -484,8 +494,6 @@ void
 Cinema::Render(Renderer& r, int timestep)
 {
 	std::cerr << "This will generate " << variableStack->count() << " frames\n";
-	sleep(3);
-
 	timesteps.push_back(timestep);
 
 	Document doc;

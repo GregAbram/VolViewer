@@ -36,10 +36,11 @@ SET(LIBS ${LIBS} ${OPENGL_LIBRARIES})
 
 SET(OSPRAY_SRCDIR "" CACHE FILEPATH "source directory of OSPRAY")
 IF(OSPRAY_SRCDIR)
-	INCLUDE_DIRECTORIES(${OSPRAY_SRCDIR} 
-											${OSPRAY_SRCDIR}/ospray/embree
-											${OSPRAY_SRCDIR}/ospray/embree/common
-											${OSPRAY_SRCDIR}/ospray/include
+  INCLUDE_DIRECTORIES(${OSPRAY_SRCDIR}
+                      ${OSPRAY_SRCDIR}/ospray
+                      ${OSPRAY_SRCDIR}/ospray/embree
+                      ${OSPRAY_SRCDIR}/ospray/embree/common
+                      ${OSPRAY_SRCDIR}/ospray/include
 										 )
 ELSE()
 	MESSAGE("OSPRAY_SRCDIR NOT OK")

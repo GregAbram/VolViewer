@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
     std::cerr << "  USAGE:  " << argv[0] << "[options] statefile"                                  << std::endl;
     std::cerr << " "                                                                               << std::endl;
     std::cerr << "  Options:"                                                                      << std::endl;
-#if WITH_OPENGL == TRUE
+#if WITH_DISPLAY_WINDOW == ON
     std::cerr << "    -S                          : show rendered images"                          << std::endl;
 #endif
     std::cerr << "    -F                          : save state files"		                           << std::endl;
@@ -68,8 +68,7 @@ int main(int argc, char *argv[]) {
 			ni = atoi(argv[++i]);
 		}
 		else if (!strcmp(argv[i], "-F"))
-    {
-      saveState = true;
+    { saveState = true;
     }
 		else if (!strcmp(argv[i], "-S"))
     {
@@ -86,7 +85,8 @@ int main(int argc, char *argv[]) {
 
   Renderer renderer(w, h, false);
 	renderer.Load(std::string(filename));
-#if WITH_OPENGL == TRUE
+
+#if WITH_DISPLAY_WINDOW
 	renderer.getWindow()->setShow(show);
 #endif
 
@@ -111,9 +111,10 @@ int main(int argc, char *argv[]) {
 	CameraVariable *camvar = new CameraVariable(phis, thetas);
 	cinema.AddVariable(camvar);
 
-#if 0
+#if 1
 	{
 		vector<int> clips;
+		clips.push_back(0);
 		clips.push_back(1);
 
 		vector<int> visible;
@@ -121,22 +122,20 @@ int main(int argc, char *argv[]) {
 
 		vector<int> flip;
 		flip.push_back(0);
-		flip.push_back(1);
 
 		vector<int> values;
 		for (int i = 0; i < 10; i++)
 		{
 			int v = (int)((i / 9.0) * 100);
-			std::cerr << "XXXX: " << v << "\n";
 			values.push_back(v);
 		}
 
-		SlicePlaneVariable *clip = new SlicePlaneVariable(string("X"), clips, visible, flip, values);
+		SlicePlaneVariable *clip = new SlicePlaneVariable(string("XYZ"), clips, visible, flip, values);
 		cinema.AddVariable(clip);
 	}
 #endif
 
-#if 1
+#if 0
 	{
 		vector<int> isovalues;
 		for (int i = 0; i < 10; i++)

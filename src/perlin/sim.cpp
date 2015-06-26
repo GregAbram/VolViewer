@@ -73,7 +73,7 @@ cinema_setup(Renderer& renderer, Cinema& cinema)
 	cinema.AddVariable(clip);
 #endif
 
-#if 0
+#if 1
 	vector<int> isovalues;
 	for (int i = 0; i < 20; i++)
 		isovalues.push_back(20 + (int)((i / 19.0) * 60));
@@ -89,12 +89,10 @@ cinema_setup(Renderer& renderer, Cinema& cinema)
 #endif
 #endif
 
-#if 0
 	vector<int> doVR;
-	doVR.push_back(1);
+	doVR.push_back(0);
 	VolumeRenderingVariable *vrvar = new VolumeRenderingVariable(doVR);
 	cinema.AddVariable(vrvar);
-#endif
 
 	std::cerr << "Requires " << cinema.Count() << " images\n";
 	return camvar;

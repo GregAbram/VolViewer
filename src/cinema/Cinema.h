@@ -84,14 +84,14 @@ public:
 	string GatherTemplate(string, Document& doc);
 
 	int count() {
-		return clip.size() * visible.size() * flip.size() * values.size() * down->count();
+		return axes.size() * clips.size() * visibles.size() * flips.size() * values.size() * down->count();
 	}
 
 private:
 	vector<int> axes;
-	vector<int> clip;
-	vector<int> visible;
-	vector<int> flip;
+	vector<int> clips;
+	vector<int> visibles;
+	vector<int> flips;
 	vector<int> values;
 };
 

@@ -7,7 +7,7 @@ class MyVolume
 public:
 		MyVolume(bool s);
 		~MyVolume();
-		void commit(bool do_anyway = false);
+		void commit(bool commit_data = false);
 		OSPVolume getOSPVolume();
 		
 		void ResetMinMax();

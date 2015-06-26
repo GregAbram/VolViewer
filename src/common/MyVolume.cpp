@@ -17,16 +17,18 @@ MyVolume::~MyVolume()
 }
 
 void
-MyVolume::commit(bool do_anyway)
+MyVolume::commit(bool commit_data)
 {
-	ospCommit(ospv);
-	if (mod | do_anyway)
+	if (mod)
 	{
-		if (data)
-		{
-			ospCommit(data);
-			mod = false;
-		}
+		ospCommit(ospv);
+		mod = false;
+	}
+
+	if (commit_data)
+	{
+		ResetMinMax();
+		ospCommit(data);
 	}
 }
 

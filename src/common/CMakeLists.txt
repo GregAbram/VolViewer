@@ -6,7 +6,8 @@ SET(LIBS ${LIBRS} ospray)
 
 SET(OSPRAY_SRCDIR "" CACHE FILEPATH "source directory of OSPRAY")
 IF(OSPRAY_SRCDIR)
-  INCLUDE_DIRECTORIES(${OSPRAY_SRCDIR} 
+  INCLUDE_DIRECTORIES(${OSPRAY_SRCDIR}
+											${OSPRAY_SRCDIR}/ospray
 											${OSPRAY_SRCDIR}/ospray/embree
                       ${OSPRAY_SRCDIR}/ospray/embree/common
                       ${OSPRAY_SRCDIR}/ospray/include
