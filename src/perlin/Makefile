@@ -4,10 +4,23 @@ else
 	USE_ISPC=0
 endif
 
+# ONLY one of these!
+
+MAC=1
+#LUNIX=1
+
+ifdef LINUX
 ISPC=/work/01249/gda/maverick/VolViewer/ispc-v1.8.1-linux/ispc
 OSPRAY_SRCDIR=/work/01249/gda/maverick/VolViewer/OSPRay/
 OSPRAY_OBJDIR=/work/01249/gda/maverick/VolViewer/OSPRay/obj
 CINEMA=/work/01249/gda/maverick/VolViewer/VolViewer/src
+else
+ISPC=/Users/gda/OSPRay/ispc-v1.8.1-osx/ispc
+OSPRAY_SRCDIR=/Users/gda/OSPRay/
+OSPRAY_OBJDIR=/Users/gda/OSPRay/obj
+CINEMA=/Users/gda/VolViewer/src
+endif
+
 DEBUG=-g -DDEBUG
 CXX=g++ ${DEBUG}
 
@@ -17,15 +30,18 @@ GLX=-L/opt/X11/lib -lX11 -lGL
 
 # Choose one of these depending on mac (.dylib) or linux (.so)
 
-LIBNAME=libperlin.so
-# LIBNAME=libperlin.dylib
+ifdef LINUX
+	LIBNAME=libperlin.so
+else
+	LIBNAME=libperlin.dylib
+endif
 
 OSPRAY_INCDIRS = \
-	-I${OSPRAY_SRCDIR} \
-	-I${OSPRAY_SRCDIR}/ospray/include \
-	-I${OSPRAY_SRCDIR}/ospray/embree \
-	-I${OSPRAY_SRCDIR}/ospray/embree/common \
-	-I${OSPRAY_SRCDIR}/ospray/embree 
+	-I${OSPRAY_SRCDIR}/ospray \
+	-I${OSPRAY_SRCDIR}/ospray/ospray/include \
+	-I${OSPRAY_SRCDIR}/ospray/ospray/embree \
+	-I${OSPRAY_SRCDIR}/ospray/ospray/embree/common \
+	-I${OSPRAY_SRCDIR}/ospray/ospray/embree 
 
 CINEMA_INCDIRS = \
 	-I${CINEMA}/common \
@@ -68,12 +84,21 @@ ${LIBNAME}:  perlin.ispc
 	${ISPC} --arch=x86-64 --pic -O3 --woff --target=avx --addressing=32 \
 					--cpu=corei7-avx --opt=fast-math \
 					-h perlin_ispc.h -MMM perlin_dev.idep -o perlin.io perlin.ispc
+ifdef LINUX
 	${CXX} -fPIC -DWITH_ISPC=$(USE_ISPC) -DDEBUG -g -shared -Wl,-soname,${LIBNAME} -o ${LIBNAME} perlin.io tasksys.cpp
-	# ${CXX} -DWITH_ISPC=$(ISPC) -dynamiclib -o ${LIBNAME} perlin.io tasksys.cpp ${LIBDIRS} ${LIBS}
 else
+	${CXX} -DWITH_ISPC=$(ISPC) -dynamiclib -o ${LIBNAME} perlin.io tasksys.cpp ${LIBDIRS} ${LIBS}
+endif
+
+else
+
 ${LIBNAME}: perlin.cpp
+ifdef LINUX
 	${CXX} -fPIC -DDEBUG -DWITH_ISPC=$(USE_ISPC) -g -shared -Wl,-soname,${LIBNAME} -o ${LIBNAME} perlin.cpp tasksys.cpp
-	# ${CXX} -dynamiclib -DWITH_ISPC=$(USE_ISPC) -o ${LIBNAME} perlin.io tasksys.cpp ${LIBDIRS} ${LIBS}
+else
+	${CXX} -dynamiclib -DWITH_ISPC=$(USE_ISPC) -o ${LIBNAME} perlin.io tasksys.cpp ${LIBDIRS} ${LIBS}
+endif
+
 endif
 
 sim.o : ${LIBNAME}
