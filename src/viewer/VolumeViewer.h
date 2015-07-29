@@ -26,7 +26,7 @@
 #include "TransferFunctionEditor.h"
 #include "SlicesEditor.h"
 #include "IsosEditor.h"
-#include "MyVolume.h"
+#include "Volume.h"
 
 #include "../common/common.h"
 
@@ -79,7 +79,7 @@ public slots:
 
 protected:
 	std::string volumeName;
-	MyVolume volume;
+	Volume volume;
 
   //! OSPRay renderer.
   OSPRenderer renderer;

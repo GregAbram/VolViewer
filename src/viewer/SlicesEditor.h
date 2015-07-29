@@ -1,6 +1,6 @@
 #include <ospray/ospray.h>
 #include <QtGui>
-#include "MyVolume.h"
+#include "Volume.h"
 #include "Slices.h"
 
 #include "../common/common.h"
@@ -13,7 +13,7 @@ public:
 	SlicesEditor();
 	Slices& getSlices() { return slices; }
 
-	void commit(OSPRenderer r, MyVolume *v);
+	void commit(OSPRenderer r, Volume *v);
 	void update();
 
 signals:

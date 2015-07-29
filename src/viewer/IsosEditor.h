@@ -2,7 +2,7 @@
 #include <QtGui>
 #include "Isos.h"
 #include "../common/common.h"
-#include "MyVolume.h"
+#include "Volume.h"
 
 #include <math.h>
 
@@ -14,7 +14,7 @@ public:
 	IsosEditor();
 	Isos& getIsos() { return isos; }
 
-	void commit(MyVolume *v);
+	void commit(Volume *v);
 	void setMinMax(float min, float max) { isos.SetMinMax(min, max); }
 
 signals:

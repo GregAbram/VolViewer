@@ -9,7 +9,7 @@
 
 #include "common.h"
 
-#include "MyVolume.h"
+#include "Volume.h"
 
 using namespace std;
 
@@ -66,7 +66,7 @@ public:
 		section.AddMember("Isosurfaces", a, doc.GetAllocator());
 	}
 
-	void commit(MyVolume *vol)
+	void commit(Volume *vol)
 	{
 		float v[3];
 

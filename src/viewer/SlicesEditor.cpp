@@ -117,7 +117,7 @@ SlicesEditor::update()
 }
 
 void 
-SlicesEditor::commit(OSPRenderer r, MyVolume *v)
+SlicesEditor::commit(OSPRenderer r, Volume *v)
 {
 	update();
 	slices.commit(r, v);

@@ -9,7 +9,7 @@
 
 #include "common.h"
 
-#include "MyVolume.h"
+#include "Volume.h"
 
 using namespace std;
 
@@ -64,7 +64,7 @@ public:
 		section.AddMember("Slices", a, doc.GetAllocator());
 	}
 
-	void commit(OSPRenderer& renderer, MyVolume *volume)
+	void commit(OSPRenderer& renderer, Volume *volume)
 	{
 		float planes[12];
 		int   visible[3];

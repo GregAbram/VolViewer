@@ -79,7 +79,7 @@ IsosEditor::isoModified()
 }
 
 void 
-IsosEditor::commit(MyVolume *vol)
+IsosEditor::commit(Volume *vol)
 {
 	for (int i = 0; i < 3; i++)
 	{
