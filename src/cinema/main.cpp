@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
 		}
   }
 
-  Renderer renderer(w, h, false);
+  Renderer renderer(w, h);
 	renderer.Load(std::string(filename));
 
 #if WITH_DISPLAY_WINDOW
