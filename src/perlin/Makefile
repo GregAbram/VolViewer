@@ -13,7 +13,7 @@ else
 ifdef MACOS
 ISPC=/Users/gda/OSPRay/ispc-v1.8.1-osx/ispc
 OSPRAY_SRCDIR=/Users/gda/OSPRay/ospray
-OSPRAY_OBJDIR=/Users/gda/OSPRay/obj
+OSPRAY_OBJDIR=/Users/gda/OSPRay/ospray.obj
 CINEMA=/Users/gda/VolViewer/src
 endif
 endif
