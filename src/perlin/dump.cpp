@@ -10,7 +10,6 @@
 #include "perlin.h"
 
 #include "ospray/include/ospray/ospray.h"
-#include "MyVolume.h"
 
 using namespace std;
 

@@ -12,7 +12,7 @@
 #include "Isos.h"
 #include "RenderProperties.h"
 
-#include "MyVolume.h"
+#include "Volume.h"
 
 using namespace std;
 
@@ -31,7 +31,7 @@ public:
 	Isos	 		 			 &getIsos() 						{return isos;}
 	TransferFunction &getTransferFunction() {return transferFunction;}
 	OSPRenderer 		 &getRenderer() 			  {return renderer;}
-	MyVolume				 *getVolume()						{return &volume;}
+	Volume  				 *getVolume()						{return &volume;}
 	RenderProperties &getRenderProperties()	{return renderProperties;}
 
 
@@ -69,5 +69,5 @@ private:
 	RenderProperties  renderProperties;
 
 	OSPRenderer renderer;
-	MyVolume volume;
+	Volume volume;
 };
