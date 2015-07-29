@@ -1,12 +1,18 @@
 #pragma once
 
 #include "ospray/ospray.h"
+#include <vector>
+
+class TransferFunction;
 
 class MyVolume
 {
 public:
-		MyVolume(bool s);
+		MyVolume();
 		~MyVolume();
+
+		void Initialize(bool shared);
+
 		void commit(bool commit_data = false);
 		OSPVolume getOSPVolume();
 		
@@ -17,12 +23,14 @@ public:
 		void GetType(std::string& _t);
 		void SetSamplingRate(float _r);
 		void GetSamplingRate(float& _r);
-		void SetTransferFunction(OSPTransferFunction _tf);
-		void GetTransferFunction(OSPTransferFunction& _tf);
+		void SetTransferFunction(TransferFunction _tf);
 		void SetVoxels(void*  _v);
 		void GetVoxels(void*& _v);
 		void GetMinMax(float& _m, float& _M);
 		void SetIsovalues(int n, float *v);
+
+		void Import(const std::string&, TransferFunction&);
+		void Attach(const std::string&, int, int, int, void *, TransferFunction&);
 
 private:
 
@@ -33,7 +41,7 @@ private:
 		int 							  x, y, z;
 		std::string 			  type;
 		float							  samplingRate;
-		OSPTransferFunction transferFunction;
+		OSPTransferFunction ospTransferFunction;
 		void								*voxels;
 
 		float 							m, M;
@@ -45,3 +53,26 @@ private:
 		OSPVolume 					ospv;
 		OSPData 						data;
 };
+
+class MyVolumeSeries
+{
+public:
+		MyVolumeSeries() {}
+		~MyVolumeSeries() {}
+
+		void Import(const std::string &filename, TransferFunction& tf);
+		void ResetMinMax();
+		void GetDimensions(int& _x, int& _y, int& _z);
+		void GetType(std::string& _t);
+		void GetSamplingRate(float& _r);
+		void GetMinMax(float& _m, float& _M);
+		void SetIsovalues(int n, float *v);
+		void SetTransferFunction(TransferFunction _tf);
+
+		int GetNumberOfMembers(int i) { return series.size(); }
+		MyVolume *GetMember(int i) { return &series[i]; }
+
+private:
+		std::vector<MyVolume> series;
+};
+

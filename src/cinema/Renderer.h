@@ -20,7 +20,7 @@ class Renderer
 {
 public:
 
-	Renderer(int, int, bool shared_data);
+	Renderer(int, int);
 	~Renderer();
 
 	CinemaWindow 		 *getWindow() 					{return window;}

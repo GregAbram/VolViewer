@@ -141,12 +141,7 @@ int main(int argc, char *argv[])
 			syntax(argv[0]);
 
 
-#if 1
-	// Create renderer with shared volume
-	Renderer renderer(width, height, true);
-#else
-	Renderer renderer(width, height, false);
-#endif
+	Renderer renderer(width, height);
 
 #if WITH_OPENGL == TRUE
   renderer.getWindow()->setShow(show);
@@ -158,10 +153,7 @@ int main(int argc, char *argv[])
 	int np = xsz*ysz*zsz;
 	float *scalars = new float[np];
 
-	renderer.getVolume()->SetType(std::string("float"));
-	renderer.getVolume()->SetDimensions(xsz, ysz, zsz);
-	renderer.getVolume()->SetVoxels((void *)scalars);
-	renderer.getVolume()->SetTransferFunction(renderer.getTransferFunction().getOSPTransferFunction());
+	renderer.getVolume()->Attach(std::string("float"), xsz, ysz, zsz, (void *)scalars, renderer.getTransferFunction());
 	renderer.CommitVolume();
 
   for (int t = 0; t < nt; t++)

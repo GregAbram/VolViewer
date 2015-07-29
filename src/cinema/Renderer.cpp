@@ -2,10 +2,8 @@
 #include <fstream>
 
 #include "Renderer.h"
-#include "Importer.h"
 
-Renderer::Renderer(int width, int height, bool shared) :
-	volume(shared)
+Renderer::Renderer(int width, int height)
 {
 	renderer = ospNewRenderer("vis_renderer");
 	camera.setRenderer(renderer);
@@ -61,7 +59,7 @@ Renderer::CommitVolume()
 void
 Renderer::LoadDataFromFile(std::string volumeName)
 {
-	importVolume(volume, volumeName, getTransferFunction());
+	volume.Import(volumeName, getTransferFunction());
 	CommitVolume();
 }
 

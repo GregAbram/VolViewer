@@ -19,13 +19,10 @@
 #include "VolumeViewer.h"
 #include "ospray/ospray.h"
 
-#include "Importer.h"
-
 VolumeViewer::VolumeViewer(bool showFrameRate) 
   : renderer(NULL), 
     osprayWindow(NULL), 
-		volumeName(""),
-		volume(false)
+		volumeName("")
 {
   //! Default window size.
   resize(1024, 768);
@@ -56,7 +53,7 @@ VolumeViewer::VolumeViewer(bool showFrameRate)
 void VolumeViewer::importFromFile(const std::string &filename) {
 
 
-	importVolume(volume, filename, getTransferFunctionEditor().getTransferFunction());
+	volume.Import(filename, getTransferFunctionEditor().getTransferFunction());
 	volumeName = filename;
 
 	float min, max;
