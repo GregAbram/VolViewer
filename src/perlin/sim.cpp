@@ -36,12 +36,12 @@ cinema_setup(Renderer& renderer, Cinema& cinema)
 {
 #if 0
 	vector<int> phis;
-	int d = 20 / 2;
+	int d = 10 / 2;
 	for (int i = 0; i < 3; i++)
 		phis.push_back(i*d);
 
 	vector<int> thetas;
-	d = 90 / 31;
+	d = 31 / 31;
 	for (int i = 0; i < 32; i++)
 		thetas.push_back(i*d);
 #else

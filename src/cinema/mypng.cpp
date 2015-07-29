@@ -55,7 +55,7 @@ int write_png(const char *filename, int w, int h, unsigned int *rgba)
 
   png_init_io(png_ptr, fp);
 
-  png_set_IHDR(png_ptr, info_ptr, w, h, 8, PNG_COLOR_TYPE_RGB_ALPHA, 
+  png_set_IHDR(png_ptr, info_ptr, w, h, 8, PNG_COLOR_TYPE_RGB_ALPHA,
   	PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 
   png_byte **rows = new png_byte *[h];
