@@ -26,6 +26,7 @@
 #include "TransferFunctionEditor.h"
 #include "SlicesEditor.h"
 #include "IsosEditor.h"
+#include "TimeEditor.h"
 #include "Volume.h"
 
 #include "../common/common.h"
@@ -54,7 +55,7 @@ class VolumeViewer : public QMainWindow {
   //! A string description of this class.
   std::string toString() const { return("VolumeViewer"); }
 
-  //! Load an volume from a file
+  //! Load an data from a file
   void importFromFile(const std::string &filename);
 
 	void loadState(std::string statename);
@@ -64,11 +65,12 @@ class VolumeViewer : public QMainWindow {
 public slots:
 
 	void openVolume();
+	void openSeries();
 	void loadColorMap();
 	void openState();
 	void saveState();
 
-	void commitVolume() { volume.commit(); }
+	void commitVolume() { currentVolume->commit(); }
 
   //! Force the OSPRay window to be redrawn.
   void render() { if (osprayWindow != NULL) osprayWindow->updateGL(); }
@@ -77,9 +79,13 @@ public slots:
 	void commitIsos();
 	void commitLights();
 
+	void resetCamera();
+	void selectTimeStep(int);
+
 protected:
-	std::string volumeName;
-	Volume volume;
+	std::string dataName;
+	Volume *currentVolume;
+	VolumeSeries volumeSeries;
 
   //! OSPRay renderer.
   OSPRenderer renderer;
@@ -114,5 +120,8 @@ protected:
 
   //! The transfer function editor.
   RenderPropertiesEditor renderPropertiesEditor;
+
+	//! The timestep manager
+	TimeEditor timeEditor;
 };
 

@@ -1,4 +1,3 @@
-
 // ======================================================================== //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -20,15 +19,25 @@
 #include "ospray/ospray.h"
 
 VolumeViewer::VolumeViewer(bool showFrameRate) 
+#if 1
   : renderer(NULL), 
     osprayWindow(NULL), 
-		volumeName("")
+		dataName("")
 {
+#else
+{
+	std::cerr << "here\n";
+  renderer = NULL;
+  osprayWindow = NULL;
+	dataName = string("");
+#endif
+
   //! Default window size.
   resize(1024, 768);
 
   //! Create an OSPRay renderer.
-  renderer = ospNewRenderer("vis_renderer");  exitOnCondition(renderer == NULL, "could not create OSPRay renderer object");
+  renderer = ospNewRenderer("vis_renderer");  
+	exitOnCondition(renderer == NULL, "could not create OSPRay renderer object");
 	getTransferFunctionEditor().setRenderer(renderer);
 
 	renderPropertiesEditor.setRenderer(renderer);
@@ -41,28 +50,32 @@ VolumeViewer::VolumeViewer(bool showFrameRate)
 
   //! Commit the transfer function only after the initial colors and alphas have been set (workaround for Qt signalling issue).
 	getTransferFunctionEditor().getTransferFunction().commit(renderer);
-	slicesEditor.commit(renderer, &volume);
-	isosEditor.commit(&volume);
+
+	// slicesEditor.commit(renderer, currentVolume);
+	// isosEditor.commit(currentVolume);
 
   //! Show the window.
-  show();
 	raise();
+	std::cerr << "Clearing?\n";
 	osprayWindow->Clear();
+  show();
 }
 
-void VolumeViewer::importFromFile(const std::string &filename) {
+void 
+VolumeViewer::selectTimeStep(int t)
+{
+	if (t > volumeSeries.GetNumberOfMembers())
+	{
+		std::cerr << "t too big in selectTimeSeries\n";
+		t = 0;
+	}
 
-
-	volume.Import(filename, getTransferFunctionEditor().getTransferFunction());
-	volumeName = filename;
-
-	float min, max;
-	volume.GetMinMax(min, max);
-	isosEditor.setMinMax(min, max);
-	getTransferFunctionEditor().setRange(min, max);
+	currentVolume = volumeSeries.GetMember(t);
+	slicesEditor.commit(renderer, currentVolume);
+	isosEditor.commit(currentVolume);
 
   OSPModel model = ospNewModel();
-	ospAddVolume(model, volume.getOSPVolume());
+	ospAddVolume(model, currentVolume->getOSPVolume());
 	ospCommit(model);  
 	ospSetObject(renderer, "model", model);
 
@@ -71,6 +84,43 @@ void VolumeViewer::importFromFile(const std::string &filename) {
 	ospSetObject(renderer, "dynamic_model", dmodel);
 
 	ospCommit(renderer);
+	osprayWindow->setRenderingEnabled(true);
+}
+
+void VolumeViewer::importFromFile(const std::string &filename) {
+
+
+	volumeSeries.Import(filename, getTransferFunctionEditor().getTransferFunction());
+
+	dataName = filename;
+
+	float min, max;
+	volumeSeries.GetMinMax(min, max);
+
+	isosEditor.setMinMax(min, max);
+	getTransferFunctionEditor().setRange(min, max);
+
+	resetCamera();
+
+	timeEditor.setRange(volumeSeries.GetNumberOfMembers());
+
+	selectTimeStep(0);
+}
+
+void
+VolumeViewer::resetCamera()
+{
+	int x, y, z;
+	volumeSeries.GetDimensions(x, y, z);
+
+	int m = x > y ? x > z ? x : z : y > z ? y : z;
+
+	osp::vec3f eye((x-1)/2.0, (y-1)/2.0, -(3*m - (z-1)/2.0));
+	osp::vec3f center((x-1)/2.0, (y-1)/2.0, (z-1)/2.0);
+	osp::vec3f up(0.0, 1.0, 0.0);
+
+	getWindow()->getCameraEditor()->setupFrame(eye, center, up);
+	getWindow()->getCameraEditor()->commit();
 }
 
 void
@@ -82,29 +132,17 @@ VolumeViewer::openVolume()
     return;
 
 	importFromFile(filename.toStdString());
+}
 
-	float vmin, vmax;
-	volume.GetMinMax(vmin, vmax);
-	getTransferFunctionEditor().getTransferFunction().SetMin(vmin);
-	getTransferFunctionEditor().getTransferFunction().SetMax(vmax);
-	getTransferFunctionEditor().commit();
+void
+VolumeViewer::openSeries()
+{
+  QString filename = QFileDialog::getOpenFileName(this, tr("Load Volume"), ".", "series (*.ser)");
 
-	int x, y, z;
-	volume.GetDimensions(x, y, z);
+  if(filename.isEmpty())
+    return;
 
-	int m = x > y ? x > z ? x : z : y > z ? y : z;
-
-	osp::vec3f eye((x-1)/2.0, (y-1)/2.0, -(3*m - (z-1)/2.0));
-	osp::vec3f center((x-1)/2.0, (y-1)/2.0, (z-1)/2.0);
-	osp::vec3f up(0.0, 1.0, 0.0);
-
-	getWindow()->getCameraEditor()->setupFrame(eye, center, up);
-	getWindow()->getCameraEditor()->commit();
-
-	osprayWindow->setRenderingEnabled(true);
-	render();
-	render();
-	render();
+	importFromFile(filename.toStdString());
 }
 
 void VolumeViewer::loadColorMap()
@@ -177,12 +215,12 @@ void VolumeViewer::loadState(std::string statename)
 	if (doc["State"].HasMember("Isosurfaces"))
 	{
 		getIsosEditor().loadState(doc["State"]["Isosurfaces"]);
-		getIsosEditor().commit(&volume);
-		volume.commit();
+		getIsosEditor().commit(currentVolume);
+		currentVolume->commit();
 	}
 
 	float vmin, vmax;
-	volume.GetMinMax(vmin, vmax);
+	currentVolume->GetMinMax(vmin, vmax);
 	getTransferFunctionEditor().getTransferFunction().SetMin(vmin);
 	getTransferFunctionEditor().getTransferFunction().SetMax(vmax);
 	getTransferFunctionEditor().commit();
@@ -206,7 +244,7 @@ void VolumeViewer::saveState()
 
 	Value state(kObjectType);
 
-	state.AddMember("Volume", Value().SetString(volumeName.c_str(), doc.GetAllocator()), doc.GetAllocator());
+	state.AddMember("Volume", Value().SetString(dataName.c_str(), doc.GetAllocator()), doc.GetAllocator());
 
 	getWindow()->saveState(doc, state);
 	getRenderProperties()->saveState(doc, state);
@@ -234,15 +272,15 @@ void VolumeViewer::commitLights()
 
 void VolumeViewer::commitSlices()
 {
-	slicesEditor.commit(renderer, &volume);
+	slicesEditor.commit(renderer, currentVolume);
 	ospCommit(renderer);
 	render();
 }
 
 void VolumeViewer::commitIsos()
 {
-	isosEditor.commit(&volume);
-	volume.commit();
+	isosEditor.commit(currentVolume);
+	currentVolume->commit();
 	render();
 }
 	
@@ -250,9 +288,13 @@ void VolumeViewer::initUserInterfaceWidgets() {
 
 	QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
 	
-	QAction *openAct = new QAction(tr("Open"), this);
-	fileMenu->addAction(openAct);
-	connect(openAct, SIGNAL(triggered()), this, SLOT(openVolume()));
+	QAction *openVolumeAct = new QAction(tr("Open Volume"), this);
+	fileMenu->addAction(openVolumeAct);
+	connect(openVolumeAct, SIGNAL(triggered()), this, SLOT(openVolume()));
+
+	QAction *openSeriesAct = new QAction(tr("Open Series"), this);
+	fileMenu->addAction(openSeriesAct);
+	connect(openSeriesAct, SIGNAL(triggered()), this, SLOT(openSeries()));
 
 	QAction *openStateAct = new QAction(tr("Open State"), this);
 	fileMenu->addAction(openStateAct);
@@ -263,12 +305,14 @@ void VolumeViewer::initUserInterfaceWidgets() {
 	connect(saveStateAct, SIGNAL(triggered()), this, SLOT(saveState()));
 
   QDockWidget *renderPropertiesEditorDockWidget = new QDockWidget("Render Properties", this);
+	renderPropertiesEditorDockWidget->setFloating(true);
 	renderPropertiesEditorDockWidget->hide();
   renderPropertiesEditorDockWidget->setWidget(&renderPropertiesEditor);
   addDockWidget(Qt::LeftDockWidgetArea, renderPropertiesEditorDockWidget);
 	connect(&renderPropertiesEditor, SIGNAL(renderPropertiesChanged()), this, SLOT(render()));
 
   QDockWidget *transferFunctionEditorDockWidget = new QDockWidget("Transfer Function Editor", this);
+	transferFunctionEditorDockWidget->setFloating(true);
 	transferFunctionEditorDockWidget->hide();
   transferFunctionEditorDockWidget->setWidget(&transferFunctionEditor);
   connect(&transferFunctionEditor, SIGNAL(transferFunctionChanged()), this, SLOT(commitVolume()));
@@ -279,6 +323,7 @@ void VolumeViewer::initUserInterfaceWidgets() {
   transferFunctionEditor.setMaximumHeight(transferFunctionEditor.minimumSize().height());
 
 	QDockWidget *slicesEditorDockWidget = new QDockWidget("Slice Planes Editor", this);
+	slicesEditorDockWidget->setFloating(true);
 	slicesEditorDockWidget->hide();
 	slicesEditorDockWidget->setWidget(&slicesEditor);
 	connect(&slicesEditor, SIGNAL(slicesChanged()), this, SLOT(commitSlices()));
@@ -286,11 +331,20 @@ void VolumeViewer::initUserInterfaceWidgets() {
   slicesEditor.setMaximumHeight(slicesEditor.minimumSize().height());
 
 	QDockWidget *isosEditorDockWidget = new QDockWidget("Isovalues Editor", this);
+	isosEditorDockWidget->setFloating(true);
 	isosEditorDockWidget->hide();
 	isosEditorDockWidget->setWidget(&isosEditor);
 	connect(&isosEditor, SIGNAL(isosChanged()), this, SLOT(commitIsos()));
   addDockWidget(Qt::LeftDockWidgetArea, isosEditorDockWidget);
   isosEditor.setMaximumHeight(isosEditor.minimumSize().height());
+
+	QDockWidget *timeEditorDockWidget = new QDockWidget("Time Manager", this);
+	timeEditorDockWidget->setFloating(true);
+	timeEditorDockWidget->hide();
+	timeEditorDockWidget->setWidget(&timeEditor);
+	connect(&timeEditor, SIGNAL(newTimeStep(int)), this, SLOT(selectTimeStep(int)));
+  addDockWidget(Qt::LeftDockWidgetArea, timeEditorDockWidget);
+  timeEditor.setMaximumHeight(timeEditor.minimumSize().height());
 
 	QMenu *toolsMenu = menuBar()->addMenu(tr("&Tools"));
 	
@@ -313,4 +367,9 @@ void VolumeViewer::initUserInterfaceWidgets() {
 	QAction *cameraAction = new QAction(tr("Camera/Lights"), this);
 	toolsMenu->addAction(cameraAction);
 	connect(cameraAction, SIGNAL(triggered()), osprayWindow->getCameraEditor(), SLOT(Open()));
+
+	QAction *timeStepAction = new QAction(tr("Time Manager"), this);
+	toolsMenu->addAction(timeStepAction);
+	connect(timeStepAction, SIGNAL(triggered()), timeEditorDockWidget, SLOT(show()));
+
 }

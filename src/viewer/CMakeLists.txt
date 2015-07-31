@@ -64,6 +64,7 @@ SET(SRCS ${SRCS}
 	IsosEditor.cpp
 	RenderPropertiesEditor.cpp
 	CameraEditor.cpp
+	TimeEditor.cpp
   )
 
 SET(MOC_HEADERS
@@ -74,6 +75,7 @@ SET(MOC_HEADERS
 	RenderPropertiesEditor.h
   VolumeViewer.h
 	CameraEditor.h
+	TimeEditor.h
   )
 
 QT4_WRAP_CPP(MOC_OUTFILES ${MOC_HEADERS})

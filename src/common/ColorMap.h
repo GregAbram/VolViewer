@@ -19,85 +19,18 @@ using namespace std;
 class ColorMap
 {
 public:
-  ColorMap() { name = string("none"); }
-  ColorMap(string fname) { loadfile(fname); }
+  ColorMap();
+  ColorMap(string fname);
+	~ColorMap();
 
-  void loadfile(string fname)
-	{
-		name = fname;
-
-		ifstream ifs;
-
-		ifs.open(fname.c_str(), ios::in);
-		if (ifs.fail())
-			throw(std::string("error opening colormap file: ") + fname);
-
-		int n;
-		ifs >> n;
-
-		for (int i = 0; i < n; i++)
-		{
-			float x;
-			osp::vec3f rgb;
-			ifs >> x >> rgb[0] >> rgb[1] >> rgb[2];
-			colors.push_back(rgb);
-		}
-
-		if (ifs.eof())
-			throw(std::string("invalid colormap file: ") + fname);
-
-		ifs.close();
-	}
-
-	~ColorMap() {}
-
-	vector<osp::vec3f> getColors() {return colors; }
-	string getName() { return name; }
-
-	void saveState(Document &doc, Value &section)
-	{
-		Value cmap(kObjectType), fname(kObjectType);
-		fname.SetString(getName().c_str(), doc.GetAllocator());
-		cmap.AddMember("filename", fname, doc.GetAllocator());
-
-		section.AddMember("Colormap", cmap, doc.GetAllocator());
-	}
-		
-
-	void loadState(Value &section)
-	{
-		loadfile(section["filename"].GetString());
-	}
-
-	void commit(TransferFunction& t)
-	{
-    t.setColors(colors);
-	}
+  void loadfile(string fname);
+	vector<osp::vec3f> getColors();
+	string getName();
+	void saveState(Document &doc, Value &section);
+	void loadState(Value &section);
+	void commit(TransferFunction& t);
 	
-	static vector< ColorMap > load_colormap_directory()
-	{
-		vector< ColorMap > colormaps;
-
-		string foo = getenv("COLORMAP_DIR") ? getenv("COLORMAP_DIR") :
-                    getenv("HOME") ? string(getenv("HOME")) + "/colormaps"  :
-                    "";
-
-		DIR *dir;
-		if ((dir = opendir(foo.c_str())) != NULL)
-		{
-			struct dirent *ent;
-			while ((ent = readdir(dir)) != NULL)
-			{
-				string name(foo + "/" + ent->d_name);
-
-				int p = name.find_last_of('.');
-				if ((p != string::npos) && (p != (name.length()-1)) && (name.substr(p) == ".cmap"))
-					colormaps.push_back(ColorMap(name));
-			}
-		}
-
-		return colormaps;
-	}
+	static vector< ColorMap > load_colormap_directory();
 
 private:
 	vector<osp::vec3f> colors;
