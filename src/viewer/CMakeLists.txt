@@ -28,6 +28,9 @@ SET(QT_USE_QTOPENGL TRUE)
 INCLUDE(${QT_USE_FILE})
 SET(LIBS ${LIBS} ${QT_LIBRARIES})
 
+FIND_PACKAGE(VTK 6.2 REQUIRED NO_MODULE)
+INCLUDE(${VTK_USE_FILE})
+
 SET(LIBS ${LIBS} common)
 
 FIND_PACKAGE(OpenGL REQUIRED)
@@ -81,7 +84,8 @@ SET(MOC_HEADERS
 QT4_WRAP_CPP(MOC_OUTFILES ${MOC_HEADERS})
 
 ADD_EXECUTABLE(viewer ${SRCS} ${MOC_OUTFILES})
-TARGET_LINK_LIBRARIES(viewer ${LIBS} png)
+
+TARGET_LINK_LIBRARIES(viewer ${LIBS} png ${VTK_LIBRARIES})
 # ------------------------------------------------------------
 INSTALL(TARGETS viewer DESTINATION bin)
 # ------------------------------------------------------------

@@ -18,20 +18,20 @@
 #include "VolumeViewer.h"
 #include "ospray/ospray.h"
 
+#include <vtkSmartPointer.h>
+#include <vtkXMLPolyDataReader.h>
+#include <vtkPolyData.h>
+#include <vtkPoints.h>
+#include <vtkPointData.h>
+#include <vtkCell.h>
+
 VolumeViewer::VolumeViewer(bool showFrameRate) 
-#if 1
   : renderer(NULL), 
     osprayWindow(NULL), 
+		currentMesh(NULL),
+		currentVolume(NULL),
 		dataName("")
 {
-#else
-{
-	std::cerr << "here\n";
-  renderer = NULL;
-  osprayWindow = NULL;
-	dataName = string("");
-#endif
-
   //! Default window size.
   resize(1024, 768);
 
@@ -54,11 +54,11 @@ VolumeViewer::VolumeViewer(bool showFrameRate)
 	// slicesEditor.commit(renderer, currentVolume);
 	// isosEditor.commit(currentVolume);
 
-  //! Show the window.
-	raise();
-	std::cerr << "Clearing?\n";
+
 	osprayWindow->Clear();
+	raise();
   show();
+	raise();
 }
 
 void 
@@ -74,13 +74,22 @@ VolumeViewer::selectTimeStep(int t)
 	slicesEditor.commit(renderer, currentVolume);
 	isosEditor.commit(currentVolume);
 
-  OSPModel model = ospNewModel();
-	ospAddVolume(model, currentVolume->getOSPVolume());
+	UpdateModel();
+}
+
+void 
+VolumeViewer::UpdateModel()
+{
+	OSPModel model = ospNewModel();
+	if (currentMesh) ospAddGeometry(model, currentMesh);
+	if (currentVolume) ospAddVolume(model, currentVolume->getOSPVolume());
 	ospCommit(model);  
+
 	ospSetObject(renderer, "model", model);
 
 	OSPModel dmodel = ospNewModel();
 	ospCommit(dmodel);
+
 	ospSetObject(renderer, "dynamic_model", dmodel);
 
 	ospCommit(renderer);
@@ -88,7 +97,6 @@ VolumeViewer::selectTimeStep(int t)
 }
 
 void VolumeViewer::importFromFile(const std::string &filename) {
-
 
 	volumeSeries.Import(filename, getTransferFunctionEditor().getTransferFunction());
 
@@ -143,6 +151,17 @@ VolumeViewer::openSeries()
     return;
 
 	importFromFile(filename.toStdString());
+}
+
+void
+VolumeViewer::openGeometry()
+{
+  QString filename = QFileDialog::getOpenFileName(this, tr("Load Geometry"), ".", "geometry (*.vtp)");
+
+  if(filename.isEmpty())
+    return;
+
+	ImportGeometry(filename.toStdString());
 }
 
 void VolumeViewer::loadColorMap()
@@ -296,6 +315,10 @@ void VolumeViewer::initUserInterfaceWidgets() {
 	fileMenu->addAction(openSeriesAct);
 	connect(openSeriesAct, SIGNAL(triggered()), this, SLOT(openSeries()));
 
+	QAction *openGeometryAct = new QAction(tr("Open Geometry"), this);
+	fileMenu->addAction(openGeometryAct);
+	connect(openGeometryAct, SIGNAL(triggered()), this, SLOT(openGeometry()));
+
 	QAction *openStateAct = new QAction(tr("Open State"), this);
 	fileMenu->addAction(openStateAct);
 	connect(openStateAct, SIGNAL(triggered()), this, SLOT(openState()));
@@ -337,6 +360,7 @@ void VolumeViewer::initUserInterfaceWidgets() {
 
 	QAction *timeStepAction = new QAction(tr("Time Manager"), this);
 	toolsMenu->addAction(timeStepAction);
+
 	connect(timeStepAction, SIGNAL(triggered()), &timeEditor, SLOT(show()));
 	connect(&timeEditor, SIGNAL(newTimeStep(int)), this, SLOT(selectTimeStep(int)));
 }
@@ -352,4 +376,102 @@ VolumeViewer::record()
 		sprintf(buf, "frame-%04d.png", i);
 		osprayWindow->saveImage(std::string(buf));
 	}
+}
+
+void
+VolumeViewer::ImportGeometry(string filename)
+{
+	currentMesh = ospNewTriangleMesh();
+
+	std::string ext(filename.substr(filename.rfind('.')));
+	
+	if (ext == ".vtp")
+		ImportVTP(currentMesh, filename);
+	else
+	{
+		cerr << "Unrecognized file extension: " << filename << "\n";
+		return;
+	}
+
+	UpdateModel();
+}
+
+void
+VolumeViewer::ImportVTP(OSPTriangleMesh& mesh, string filename)
+{
+	vtkXMLPolyDataReader *rdr = vtkXMLPolyDataReader::New();
+	rdr->SetFileName(filename.c_str());
+	rdr->Update();
+
+	vtkPolyData *input = rdr->GetOutput();
+	int nv = input->GetPoints()->GetNumberOfPoints();
+	float *tmpf = new float[4*nv];
+
+	float *pts =  (float *)input->GetPoints()->GetVoidPointer(0);
+
+	int j = 0;
+	for (int i = 0; i < nv; i++)
+	{
+		tmpf[j++] = pts[3*i+0];
+		tmpf[j++] = pts[3*i+1];
+		tmpf[j++] = pts[3*i+2];
+		std::cout << tmpf[j-3] << " " << tmpf[j-2] << " " << tmpf[j-1] << "\n";
+	}
+
+	ospSetData(mesh, "position", ospNewData(nv, OSP_FLOAT3, tmpf));
+
+	float *nrms = (float *)input->GetPointData()->GetArray("Normals")->GetVoidPointer(0);
+
+	j = 0;
+	for (int i = 0; i < nv; i++)
+	{
+		tmpf[j++] = nrms[3*i+0];
+		tmpf[j++] = nrms[3*i+1];
+		tmpf[j++] = nrms[3*i+2];
+	}
+
+	ospSetData(mesh, "vertex.normal", ospNewData(nv, OSP_FLOAT3, tmpf));
+
+	j = 0;
+	for (int i = 0; i < nv; i++)
+	{
+		tmpf[j++] = 1.00;
+		tmpf[j++] = 0.25;
+		tmpf[j++] = 0.25;
+		tmpf[j++] = 1.0;
+	}
+
+	ospSetData(mesh, "vertex.color", ospNewData(nv, OSP_FLOAT4, tmpf));
+	delete[] tmpf;
+
+	// Count triangles
+	int nt = 0;
+	for (int i = 0; i < input->GetNumberOfCells(); i++)
+	{
+		vtkCell *cell = input->GetCell(i);
+		nt += cell->GetNumberOfPoints() - 2;
+	}
+
+	int *tris = new int[3*nt];
+	int k = 0;
+	for (int i = 0; i < input->GetNumberOfCells(); i++)
+	{
+		vtkCell *cell = input->GetCell(i);
+		if (cell->GetNumberOfPoints() != 3) 
+			std::cerr << "not a triangle\n";
+		for (int j = 2; j < cell->GetNumberOfPoints(); j++)
+		{
+			tris[k++] = cell->GetPointId(0);
+			tris[k++] = cell->GetPointId(j-1);
+			tris[k++] = cell->GetPointId(j);
+			std::cout << tris[k-3] << " " << tris[k-2] << " " << tris[k-1] << "\n";
+		}
+	}
+	std::cerr << "k = " << k << " should be: " << 3*nt << "\n";
+	
+
+	ospSetData(mesh, "index", ospNewData(nt, OSP_INT3, tris));
+	delete[] tris;
+
+	ospCommit(mesh);
 }

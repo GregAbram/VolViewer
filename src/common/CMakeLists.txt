@@ -32,5 +32,6 @@ ADD_LIBRARY(common
 						Volume.cpp 
 						ColorMap.cpp
 						mypng.cpp)
+
 TARGET_LINK_LIBRARIES(common ${LIBS})
 
