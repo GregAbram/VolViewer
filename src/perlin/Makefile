@@ -100,4 +100,4 @@ endif
 
 sim.o : ${LIBNAME}
 dump.o : ${LIBNAME}
-clean: ; rm -rf *.io *.o *.idep *_ispc.h ${LIBNAME} sim dump tdump
+clean: ; rm -rf *.io *.o *.idep *_ispc.h sim dump tdump libperlin.so libperlin.dylib

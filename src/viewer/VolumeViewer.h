@@ -69,6 +69,7 @@ public slots:
 	void loadColorMap();
 	void openState();
 	void saveState();
+	void record();
 
 	void commitVolume() { currentVolume->commit(); }
 

@@ -304,65 +304,32 @@ void VolumeViewer::initUserInterfaceWidgets() {
 	fileMenu->addAction(saveStateAct);
 	connect(saveStateAct, SIGNAL(triggered()), this, SLOT(saveState()));
 
-  QDockWidget *renderPropertiesEditorDockWidget = new QDockWidget("Render Properties", this);
-	renderPropertiesEditorDockWidget->setFloating(true);
-	renderPropertiesEditorDockWidget->hide();
-  renderPropertiesEditorDockWidget->setWidget(&renderPropertiesEditor);
-  addDockWidget(Qt::LeftDockWidgetArea, renderPropertiesEditorDockWidget);
-	connect(&renderPropertiesEditor, SIGNAL(renderPropertiesChanged()), this, SLOT(render()));
-
-  QDockWidget *transferFunctionEditorDockWidget = new QDockWidget("Transfer Function Editor", this);
-	transferFunctionEditorDockWidget->setFloating(true);
-	transferFunctionEditorDockWidget->hide();
-  transferFunctionEditorDockWidget->setWidget(&transferFunctionEditor);
-  connect(&transferFunctionEditor, SIGNAL(transferFunctionChanged()), this, SLOT(commitVolume()));
-  connect(&transferFunctionEditor, SIGNAL(transferFunctionChanged()), this, SLOT(render()));
-  addDockWidget(Qt::LeftDockWidgetArea, transferFunctionEditorDockWidget);
-
-  //! Set the transfer function editor widget to its minimum allowed height, to leave room for other dock widgets.
-  transferFunctionEditor.setMaximumHeight(transferFunctionEditor.minimumSize().height());
-
-	QDockWidget *slicesEditorDockWidget = new QDockWidget("Slice Planes Editor", this);
-	slicesEditorDockWidget->setFloating(true);
-	slicesEditorDockWidget->hide();
-	slicesEditorDockWidget->setWidget(&slicesEditor);
-	connect(&slicesEditor, SIGNAL(slicesChanged()), this, SLOT(commitSlices()));
-  addDockWidget(Qt::LeftDockWidgetArea, slicesEditorDockWidget);
-  slicesEditor.setMaximumHeight(slicesEditor.minimumSize().height());
-
-	QDockWidget *isosEditorDockWidget = new QDockWidget("Isovalues Editor", this);
-	isosEditorDockWidget->setFloating(true);
-	isosEditorDockWidget->hide();
-	isosEditorDockWidget->setWidget(&isosEditor);
-	connect(&isosEditor, SIGNAL(isosChanged()), this, SLOT(commitIsos()));
-  addDockWidget(Qt::LeftDockWidgetArea, isosEditorDockWidget);
-  isosEditor.setMaximumHeight(isosEditor.minimumSize().height());
-
-	QDockWidget *timeEditorDockWidget = new QDockWidget("Time Manager", this);
-	timeEditorDockWidget->setFloating(true);
-	timeEditorDockWidget->hide();
-	timeEditorDockWidget->setWidget(&timeEditor);
-	connect(&timeEditor, SIGNAL(newTimeStep(int)), this, SLOT(selectTimeStep(int)));
-  addDockWidget(Qt::LeftDockWidgetArea, timeEditorDockWidget);
-  timeEditor.setMaximumHeight(timeEditor.minimumSize().height());
+	QAction *recordAct = new QAction(tr("Record"), this);
+	fileMenu->addAction(recordAct);
+	connect(recordAct, SIGNAL(triggered()), this, SLOT(record()));
 
 	QMenu *toolsMenu = menuBar()->addMenu(tr("&Tools"));
 	
 	QAction *renderPropertiesAction = new QAction(tr("Render Properties"), this);
 	toolsMenu->addAction(renderPropertiesAction);
-	connect(renderPropertiesAction, SIGNAL(triggered()), renderPropertiesEditorDockWidget, SLOT(show()));
+	connect(renderPropertiesAction, SIGNAL(triggered()), &renderPropertiesEditor, SLOT(show()));
+	connect(&renderPropertiesEditor, SIGNAL(renderPropertiesChanged()), this, SLOT(render()));
 	
 	QAction *transferFunctionAction = new QAction(tr("Transfer Function"), this);
 	toolsMenu->addAction(transferFunctionAction);
-	connect(transferFunctionAction, SIGNAL(triggered()), transferFunctionEditorDockWidget, SLOT(show()));
+	connect(transferFunctionAction, SIGNAL(triggered()), &transferFunctionEditor, SLOT(show()));
+  connect(&transferFunctionEditor, SIGNAL(transferFunctionChanged()), this, SLOT(commitVolume()));
+  connect(&transferFunctionEditor, SIGNAL(transferFunctionChanged()), this, SLOT(render()));
 
 	QAction *slicesAction = new QAction(tr("Slices"), this);
 	toolsMenu->addAction(slicesAction);
-	connect(slicesAction, SIGNAL(triggered()), slicesEditorDockWidget, SLOT(show()));
+	connect(slicesAction, SIGNAL(triggered()), &slicesEditor, SLOT(show()));
+	connect(&slicesEditor, SIGNAL(slicesChanged()), this, SLOT(commitSlices()));
 
 	QAction *isosAction = new QAction(tr("Isosurfaces"), this);
 	toolsMenu->addAction(isosAction);
-	connect(isosAction, SIGNAL(triggered()), isosEditorDockWidget, SLOT(show()));
+	connect(isosAction, SIGNAL(triggered()), &isosEditor, SLOT(show()));
+	connect(&isosEditor, SIGNAL(isosChanged()), this, SLOT(commitIsos()));
 
 	QAction *cameraAction = new QAction(tr("Camera/Lights"), this);
 	toolsMenu->addAction(cameraAction);
@@ -370,6 +337,19 @@ void VolumeViewer::initUserInterfaceWidgets() {
 
 	QAction *timeStepAction = new QAction(tr("Time Manager"), this);
 	toolsMenu->addAction(timeStepAction);
-	connect(timeStepAction, SIGNAL(triggered()), timeEditorDockWidget, SLOT(show()));
+	connect(timeStepAction, SIGNAL(triggered()), &timeEditor, SLOT(show()));
+	connect(&timeEditor, SIGNAL(newTimeStep(int)), this, SLOT(selectTimeStep(int)));
+}
 
+void
+VolumeViewer::record()
+{
+	for (int i = 0; i < volumeSeries.GetNumberOfMembers(); i++)
+	{
+		selectTimeStep(i);
+
+		char buf[256];
+		sprintf(buf, "frame-%04d.png", i);
+		osprayWindow->saveImage(std::string(buf));
+	}
 }

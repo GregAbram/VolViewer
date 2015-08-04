@@ -50,6 +50,8 @@ public:
 	void commit() { cameraEditor.commit(); }
 	void render() { updateGL(); }
 
+	void saveImage(std::string filename);
+
 protected:
 
   /*! Parent Qt window. */
@@ -93,4 +95,6 @@ protected:
   OSPRenderer renderer;
 
 	CameraEditor cameraEditor;
+
+	int current_width, current_height;
 };

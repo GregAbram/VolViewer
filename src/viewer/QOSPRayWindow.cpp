@@ -24,6 +24,7 @@
 #include <sys/resource.h>
 
 #include "../common/common.h"
+#include "../common/mypng.h"
 
 QOSPRayWindow::QOSPRayWindow(QMainWindow *parent, 
                              OSPRenderer renderer, 
@@ -148,6 +149,9 @@ void QOSPRayWindow::paintGL()
 
 void QOSPRayWindow::resizeGL(int width, int height)
 {
+	current_width = width;
+	current_height = height;
+
   windowSize = osp::vec2i(width, height);
 
   // reallocate OSPRay framebuffer for new size
@@ -215,3 +219,14 @@ void QOSPRayWindow::keyPressEvent(QKeyEvent *event)
 			updateGL();
 	}
 }
+
+void
+QOSPRayWindow::saveImage(std::string filename)
+{
+  uint32 * mappedFrameBuffer = (unsigned int *)ospMapFrameBuffer(frameBuffer);
+	write_png(filename.c_str(), current_width, current_height, mappedFrameBuffer);
+  ospUnmapFrameBuffer(mappedFrameBuffer, frameBuffer);
+}
+
+
+

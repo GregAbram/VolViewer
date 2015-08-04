@@ -1,7 +1,6 @@
 #include <ospray/ospray.h>
 #include <QtGui>
 #include "Volume.h"
-#include "Time.h"
 
 #include "../common/common.h"
 

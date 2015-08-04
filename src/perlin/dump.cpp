@@ -6,6 +6,8 @@
 #include <fstream>
 #include <sstream>
 #include <math.h>
+#include <string>
+#include <sstream>
 
 #include "perlin.h"
 
@@ -61,13 +63,15 @@ int main(int argc, char *argv[])
 	{
 		PerlinT(scalars, xsz, ysz, zsz, i*delta_t);
 
-		string raw_name = string("timestep-") + to_string(i) + ".raw";
+		ostringstream os;
+		os << i;
+		string raw_name = string("timestep-") + os.str() + ".raw";
 		
 		ofstream f(raw_name.c_str(), ofstream::binary);
 		f.write((char *)scalars, np*sizeof(float));
 		f.close();
 
-		string timestep_name = string("timestep-") + to_string(i) + ".vol";
+		string timestep_name = string("timestep-") + os.str() + ".vol";
 		v << timestep_name << "\n";
 
 		ofstream t(timestep_name.c_str());

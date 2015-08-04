@@ -81,7 +81,7 @@ SET(MOC_HEADERS
 QT4_WRAP_CPP(MOC_OUTFILES ${MOC_HEADERS})
 
 ADD_EXECUTABLE(viewer ${SRCS} ${MOC_OUTFILES})
-TARGET_LINK_LIBRARIES(viewer ${LIBS})
+TARGET_LINK_LIBRARIES(viewer ${LIBS} png)
 # ------------------------------------------------------------
 INSTALL(TARGETS viewer DESTINATION bin)
 # ------------------------------------------------------------
