@@ -62,10 +62,14 @@ class VolumeViewer : public QMainWindow {
 
 	RenderPropertiesEditor *getRenderProperties() { return &renderPropertiesEditor; }
 
+	void ImportGeometry(std::string);
+	void UpdateModel();
+
 public slots:
 
 	void openVolume();
 	void openSeries();
+	void openGeometry();
 	void loadColorMap();
 	void openState();
 	void saveState();
@@ -123,5 +127,9 @@ protected:
 
 	//! The timestep manager
 	TimeEditor timeEditor;
+
+	void ImportVTP(OSPTriangleMesh& mesh, std::string);
+
+	OSPTriangleMesh currentMesh;
 };
 

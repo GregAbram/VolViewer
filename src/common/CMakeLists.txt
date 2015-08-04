@@ -23,6 +23,13 @@ ELSE()
   MESSAGE("OSPRAY_OBJDIR NOT OK")
 ENDIF()
 
-ADD_LIBRARY(common SHARED TransferFunction.cpp Camera.cpp Lights.cpp RenderProperties.cpp Volume.cpp ColorMap.cpp)
+ADD_LIBRARY(common SHARED
+		TransferFunction.cpp
+		Camera.cpp
+		Lights.cpp
+		RenderProperties.cpp
+		Volume.cpp
+		ColorMap.cpp)
+
 TARGET_LINK_LIBRARIES(common ${LIBS})
 
