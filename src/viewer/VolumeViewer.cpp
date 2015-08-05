@@ -415,7 +415,7 @@ VolumeViewer::ImportVTP(OSPTriangleMesh& mesh, string filename)
 		tmpf[j++] = pts[3*i+0];
 		tmpf[j++] = pts[3*i+1];
 		tmpf[j++] = pts[3*i+2];
-		std::cout << tmpf[j-3] << " " << tmpf[j-2] << " " << tmpf[j-1] << "\n";
+		// std::cout << tmpf[j-3] << " " << tmpf[j-2] << " " << tmpf[j-1] << "\n";
 	}
 
 	ospSetData(mesh, "position", ospNewData(nv, OSP_FLOAT3, tmpf));
@@ -435,9 +435,9 @@ VolumeViewer::ImportVTP(OSPTriangleMesh& mesh, string filename)
 	j = 0;
 	for (int i = 0; i < nv; i++)
 	{
-		tmpf[j++] = 1.00;
-		tmpf[j++] = 0.25;
-		tmpf[j++] = 0.25;
+		tmpf[j++] = 0.75;
+		tmpf[j++] = 0.75;
+		tmpf[j++] = 0.75;
 		tmpf[j++] = 1.0;
 	}
 
@@ -464,7 +464,7 @@ VolumeViewer::ImportVTP(OSPTriangleMesh& mesh, string filename)
 			tris[k++] = cell->GetPointId(0);
 			tris[k++] = cell->GetPointId(j-1);
 			tris[k++] = cell->GetPointId(j);
-			std::cout << tris[k-3] << " " << tris[k-2] << " " << tris[k-1] << "\n";
+			//std::cout << tris[k-3] << " " << tris[k-2] << " " << tris[k-1] << "\n";
 		}
 	}
 	std::cerr << "k = " << k << " should be: " << 3*nt << "\n";
