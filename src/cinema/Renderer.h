@@ -20,7 +20,7 @@ class Renderer
 {
 public:
 
-	Renderer(int, int);
+	Renderer(int, int, bool shared_data);
 	~Renderer();
 
 	CinemaWindow 		 *getWindow() 					{return window;}
@@ -31,7 +31,7 @@ public:
 	Isos	 		 			 &getIsos() 						{return isos;}
 	TransferFunction &getTransferFunction() {return transferFunction;}
 	OSPRenderer 		 &getRenderer() 			  {return renderer;}
-	Volume  				 *getVolume()						{return &volume;}
+	Volume					 *getVolume()						{return &volume;}
 	RenderProperties &getRenderProperties()	{return renderProperties;}
 
 

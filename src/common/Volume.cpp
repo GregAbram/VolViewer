@@ -3,8 +3,8 @@
 #include "Volume.h"
 #include "TransferFunction.h"
 
-Volume::Volume() :
-		shared(false), nIso(0), isoValues(NULL),
+Volume::Volume(bool s) :
+		shared(s), nIso(0), isoValues(NULL),
 		voxels(NULL), mod(true), data(NULL),
 		type("none"), x(-1), ospv(NULL)
 {}

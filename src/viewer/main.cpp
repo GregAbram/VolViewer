@@ -168,7 +168,6 @@ int main(int argc, char *argv[]) {
 	}
 
   //! Create the OSPRay state and viewer window.
-	std::cerr << "calling new on VV\n";
   VolumeViewer *volumeViewer = new VolumeViewer(showFrameRate);
 
   //! Set benchmarking parameters.

@@ -211,8 +211,5 @@ void TransferFunctionEditor::loadColorMaps() {
 	std::vector< ColorMap > cmaps = ColorMap::load_colormap_directory();
 
   for (std::vector< ColorMap >::iterator it = cmaps.begin(); it != cmaps.end(); ++it)
-	{
-		VColorMap vc(*it);
-		colorMaps.push_back(vc);
-	}
+		colorMaps.push_back(VColorMap(*it));
 }

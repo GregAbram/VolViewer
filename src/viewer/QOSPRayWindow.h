@@ -50,7 +50,7 @@ public:
 	void commit() { cameraEditor.commit(); }
 	void render() { updateGL(); }
 
-	void saveImage(std::string filename);
+  void saveImage(std::string filename);
 
 protected:
 

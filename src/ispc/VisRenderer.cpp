@@ -64,6 +64,13 @@ namespace ospray {
       Data *planes = t;
       Data *svis = getParamData("slice visibility", NULL);
       Data *sclip = getParamData("slice clips", NULL);
+			for (int i = 0; i < planes->numItems; i++)
+			{
+				float *foo = (float *)(planes->data);
+				std::cerr << "Plane: " << i << "\n";
+				std::cerr << foo[i*4+0] << " "  << foo[i*4+1] << " " << foo[i*4+2] << " " << foo[i*4+3] << "\n";
+			}
+			
       ispc::VisRenderer_setSlices(ispcEquivalent, planes->numItems, 
 																(ispc::vec4f *)planes->data, (int *)sclip->data, 
 																(int *)svis->data);
@@ -79,6 +86,10 @@ namespace ospray {
 
 		float amb = getParam1f("ambient", 0.5);
 		ispc::VisRenderer_set_ambient(ispcEquivalent, amb);
+
+		float sscale = getParam1f("stepScale", 1.0);
+		ispc::VisRenderer_set_stepScale(ispcEquivalent, sscale);
+
 
     //! Initialize state in the parent class, must be called after the ISPC object is created.
     Renderer::commit();

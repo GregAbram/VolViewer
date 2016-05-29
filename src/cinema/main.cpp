@@ -83,83 +83,13 @@ int main(int argc, char *argv[]) {
 		}
   }
 
-  Renderer renderer(w, h);
-	renderer.Load(std::string(filename));
+  Renderer renderer(w, h, false);
+
+	cinema.Load(renderer, filename, true);
 
 #if WITH_DISPLAY_WINDOW
 	renderer.getWindow()->setShow(show);
 #endif
-
-#if 0
-	vector<int> phis;
-	int d = 20 / 2;
-	for (int i = 0; i < 3; i++)
-		phis.push_back(i*d);
-
-	vector<int> thetas;
-	d = 90 / 31;
-	for (int i = 0; i < 32; i++)
-		thetas.push_back(i*d);
-#else
-	vector<int> phis;
-	phis.push_back(30);
-
-	vector<int> thetas;
-	thetas.push_back(50);
-#endif
-
-	CameraVariable *camvar = new CameraVariable(phis, thetas);
-	cinema.AddVariable(camvar);
-
-#if 1
-	{
-		vector<int> clips;
-		clips.push_back(0);
-		clips.push_back(1);
-
-		vector<int> visible;
-		visible.push_back(1);
-
-		vector<int> flip;
-		flip.push_back(0);
-
-		vector<int> values;
-		for (int i = 0; i < 10; i++)
-		{
-			int v = (int)((i / 9.0) * 100);
-			values.push_back(v);
-		}
-
-		SlicePlaneVariable *clip = new SlicePlaneVariable(string("XYZ"), clips, visible, flip, values);
-		cinema.AddVariable(clip);
-	}
-#endif
-
-#if 0
-	{
-		vector<int> isovalues;
-		for (int i = 0; i < 10; i++)
-			isovalues.push_back((int)(20 + (i / 9.0)*60));
-
-		float min, max;
-		renderer.getVolume()->GetMinMax(min, max);
-		renderer.getIsos().SetMinMax(min, max);
-
-		IsosurfaceVariable *iso = new IsosurfaceVariable(string("Iso"), isovalues);
-		cinema.AddVariable(iso);
-	}
-#endif
-
-#if 0
-	vector<int> doVR;
-	doVR.push_back(0);
-	// doVR.push_back(1);
-	VolumeRenderingVariable *vrvar = new VolumeRenderingVariable(doVR);
-	cinema.AddVariable(vrvar);
-#endif
-
-	std::cerr << "Requires " << cinema.Count() << " images\n";
-	camvar->ResetCount();
 
 	cinema.setSaveState(saveState);
 	cinema.Render(renderer, 0);

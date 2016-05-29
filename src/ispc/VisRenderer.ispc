@@ -459,7 +459,7 @@ inline void VisRenderer_intersectIsosurface(VisRenderer *uniform renderer, Volum
   }
 
   //! Advance the ray.
-  volume->intersectIsosurface(volume, volume->isovalues, volume->numIsovalues, ray); 
+  volume->intersectIsosurface(volume, renderer->stepScale, volume->isovalues, volume->numIsovalues, ray); 
 	if (ray.t > ray.t1)
 	{
 		return;
@@ -473,7 +473,7 @@ inline void VisRenderer_intersectIsosurface(VisRenderer *uniform renderer, Volum
   while(1) {
 
     //! Advance the ray.
-    volume->intersectIsosurface(volume, volume->isovalues, volume->numIsovalues, ray);  
+    volume->intersectIsosurface(volume, renderer->stepScale, volume->isovalues, volume->numIsovalues, ray);  
 		if (ray.t > ray.t1) 
 		{
 			return;
@@ -523,7 +523,7 @@ inline void VisRenderer_computeIsosurfaceSample(VisRenderer *uniform renderer,
   }
 
   //! Advance the ray.
-  volume->intersectIsosurface(volume, volume->isovalues, volume->numIsovalues, ray); 
+  volume->intersectIsosurface(volume, renderer->stepScale, volume->isovalues, volume->numIsovalues, ray); 
 	if (ray.t > ray.t1) return;
 
   //! Sample the volume at the hit point in world coordinates.
@@ -533,7 +533,7 @@ inline void VisRenderer_computeIsosurfaceSample(VisRenderer *uniform renderer,
   while(1) {
 
     //! Advance the ray.
-    volume->intersectIsosurface(volume, volume->isovalues, volume->numIsovalues, ray);  
+    volume->intersectIsosurface(volume, renderer->stepScale, volume->isovalues, volume->numIsovalues, ray);  
 		if (ray.t > ray.t1) 
 		{
 			return;
@@ -739,7 +739,7 @@ inline bool VisRenderer_intersect(uniform VisRenderer *uniform renderer,
   const float tMax = ray.t1;
 
   //! Offset ray by a fraction of the nominal ray step.
-  const uniform float step = renderer->model->volumes[0]->samplingStep / renderer->model->volumes[0]->samplingRate;
+  const uniform float step = renderer->stepScale * (renderer->model->volumes[0]->samplingStep / renderer->model->volumes[0]->samplingRate);
   ray.t += 0.01 * step;
 
   //! Copy of the ray for volume isosurface intersection. The original ray is used for volume intersection.
@@ -990,6 +990,12 @@ export void VisRenderer_setDynamicModel(void *uniform pointer,
   renderer->dynamicModel = (Model *uniform) model;
 }
 
+export void VisRenderer_set_stepScale(void *uniform pointer, uniform float a)
+{
+  VisRenderer *uniform visRenderer = (VisRenderer *uniform) pointer;
+	visRenderer->stepScale = a;
+}
+
 export void VisRenderer_set_ambient(void *uniform pointer, uniform float a)
 {
   VisRenderer *uniform visRenderer = (VisRenderer *uniform) pointer;
@@ -1067,7 +1073,7 @@ bool VisRenderer_AO_intersect(uniform Renderer *uniform pointer, varying ScreenS
   const float tMax = ray.t1;
 
   //! Offset ray by a fraction of the nominal ray step.
-  const uniform float step = renderer->model->volumes[0]->samplingStep / renderer->model->volumes[0]->samplingRate;
+  const uniform float step = renderer->stepScale * (renderer->model->volumes[0]->samplingStep / renderer->model->volumes[0]->samplingRate);
   ray.t += 0.01 * step;
 
   //! Copy of the ray for volume isosurface intersection. The original ray is used for volume intersection.

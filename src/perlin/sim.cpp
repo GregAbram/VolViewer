@@ -36,12 +36,12 @@ cinema_setup(Renderer& renderer, Cinema& cinema)
 {
 #if 0
 	vector<int> phis;
-	int d = 10 / 2;
+	int d = 20 / 2;
 	for (int i = 0; i < 3; i++)
 		phis.push_back(i*d);
 
 	vector<int> thetas;
-	d = 31 / 31;
+	d = 90 / 31;
 	for (int i = 0; i < 32; i++)
 		thetas.push_back(i*d);
 #else
@@ -141,7 +141,12 @@ int main(int argc, char *argv[])
 			syntax(argv[0]);
 
 
-	Renderer renderer(width, height);
+#if 1
+	// Create renderer with shared volume
+	Renderer renderer(width, height, true);
+#else
+	Renderer renderer(width, height, false);
+#endif
 
 #if WITH_OPENGL == TRUE
   renderer.getWindow()->setShow(show);
@@ -153,7 +158,10 @@ int main(int argc, char *argv[])
 	int np = xsz*ysz*zsz;
 	float *scalars = new float[np];
 
-	renderer.getVolume()->Attach(std::string("float"), xsz, ysz, zsz, (void *)scalars, renderer.getTransferFunction());
+	renderer.getVolume()->SetType(std::string("float"));
+	renderer.getVolume()->SetDimensions(xsz, ysz, zsz);
+	renderer.getVolume()->SetVoxels((void *)scalars);
+	renderer.getVolume()->SetTransferFunction(renderer.getTransferFunction().getOSPTransferFunction());
 	renderer.CommitVolume();
 
   for (int t = 0; t < nt; t++)

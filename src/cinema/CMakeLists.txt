@@ -46,6 +46,8 @@ SET(SRCS ${SRCS}
   CinemaWindow.cpp
   Renderer.cpp
   Cinema.cpp
+	Variable.cpp
+	util.cpp
 	mypng.cpp
   )
 

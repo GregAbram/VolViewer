@@ -64,7 +64,7 @@ CinemaWindow::createDisplay()
 }
 #else
 bool
-CinemaWindow::createDisplay() {return true;}
+CinemaWindow::createDisplay() {}
 #endif
 
 void CinemaWindow::save(std::string filename)
@@ -83,13 +83,6 @@ void CinemaWindow::save(std::string filename)
 	}
 #endif
 		
-	unsigned int *buf = new unsigned int[width*height];
-	for (int i = 0; i < width*height; i++)
-		buf[i] = (mappedFrameBuffer[i] == 0) ? 0xff010101 : mappedFrameBuffer[i];
-
-	write_png(filename.c_str(), width, height, buf);
-
-	delete[] buf;
-
+	write_png(filename.c_str(), width, height, mappedFrameBuffer);
 	ospUnmapFrameBuffer(mappedFrameBuffer, frameBuffer);
 }

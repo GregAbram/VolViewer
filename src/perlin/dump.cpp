@@ -6,12 +6,11 @@
 #include <fstream>
 #include <sstream>
 #include <math.h>
-#include <string>
-#include <sstream>
 
 #include "perlin.h"
 
 #include "ospray/include/ospray/ospray.h"
+#include "MyVolume.h"
 
 using namespace std;
 
@@ -23,7 +22,6 @@ syntax(char *a)
     cerr << "  -r xres yres zres  overall grid resolution (512x512x512)\n";
     cerr << "  -O octave          noise octave (4)\n";
     cerr << "  -F frequency       noise frequency (8)\n";
-		cerr << "  -t dt nt           time series delta, number of timesteps (0, 1)\n";
     cerr << "  -P persistence     noise persistence (0.5)\n";
     exit(1);
 }
@@ -32,8 +30,6 @@ int main(int argc, char *argv[])
 {
   int xsz = 512, ysz = 512, zsz = 512;
   float t = 3.1415926;
-	float delta_t;
-	int nt = 1;
 
   for (int i = 1; i < argc; i++)
     if (argv[i][0] == '-') 
@@ -45,7 +41,6 @@ int main(int argc, char *argv[])
 				case 'P': SetPersistence(atof(argv[++i])); break;
 				case 'F': SetFrequency(atof(argv[++i])); break;
 				case 'O': SetOctaveCount(atoi(argv[++i])); break;
-				case 't': delta_t = atof(argv[++i]); nt = atoi(argv[++i]); break;
 				default:  syntax(argv[0]);
 			}
 		else
@@ -53,32 +48,17 @@ int main(int argc, char *argv[])
 
 	ospInit(&argc, (const char **)argv);
 
-	ofstream v("data.ser");
-	v << nt << "\n";
-
 	size_t np = ((size_t)xsz)*((size_t)ysz)*((size_t)zsz);
 	float *scalars = new float[np];
 
-	for (int i = 0; i < nt; i++)
-	{
-		PerlinT(scalars, xsz, ysz, zsz, i*delta_t);
+	PerlinT(scalars, xsz, ysz, zsz, 0.9);
 
-		ostringstream os;
-		os << i;
-		string raw_name = string("timestep-") + os.str() + ".raw";
-		
-		ofstream f(raw_name.c_str(), ofstream::binary);
-		f.write((char *)scalars, np*sizeof(float));
-		f.close();
+	ofstream f("data.raw", ofstream::binary);
+	f.write((char *)scalars, np*sizeof(float));
+	f.close();
 
-		string timestep_name = string("timestep-") + os.str() + ".vol";
-		v << timestep_name << "\n";
-
-		ofstream t(timestep_name.c_str());
-		t << xsz << " " << ysz << " " << zsz << " float " << raw_name << "\n";
-		t.close();
-	}
-
+	ofstream v("data.vol");
+	v << xsz << " " << ysz << " " << zsz << " float data.raw\n";
 	v.close();
 }
 

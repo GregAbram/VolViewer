@@ -20,7 +20,7 @@
 #include "ospray/common/Model.ih"
 #include "ospray/common/Ray.ih"
 #include "ospray/lights/Light.ih"
-#include "ospray/math/bbox.ih"
+// #include "ospray/math/bbox.ih"
 #include "ospray/render/Renderer.ih"
 
 //! \brief ISPC variables and functions for the VisRenderer
@@ -42,6 +42,8 @@ struct VisRenderer {
 	uniform int    *uniform sliceVisibility;
 	uniform int    *uniform sliceClips;
 
+	uniform float  stepScale;
+
 	uniform	int			numAO;
 	uniform float		AOradius;
 	uniform float		ambient;
@@ -51,6 +53,8 @@ void VisRenderer_renderFramePostamble(Renderer *uniform renderer,
                                                 const uniform int32 accumID);
 void VisRenderer_renderFramePreamble(Renderer *uniform renderer, 
                                                	FrameBuffer *uniform framebuffer);
+
+export void VisRenderer_setStepScale(void *uniform renderer, uniform float scale);
 
 export void VisRenderer_setSlices(void *uniform renderer, const uniform size_t &count, 			
 																								vec4f *uniform planes, int *uniform clips, 

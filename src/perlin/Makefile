@@ -4,18 +4,21 @@ else
 	USE_ISPC=0
 endif
 
+# ONLY one of these!
+
+MAC=1
+#LUNIX=1
+
 ifdef LINUX
 ISPC=/work/01249/gda/maverick/VolViewer/ispc-v1.8.1-linux/ispc
 OSPRAY_SRCDIR=/work/01249/gda/maverick/VolViewer/OSPRay/
 OSPRAY_OBJDIR=/work/01249/gda/maverick/VolViewer/OSPRay/obj
 CINEMA=/work/01249/gda/maverick/VolViewer/VolViewer/src
 else
-ifdef MACOS
 ISPC=/Users/gda/OSPRay/ispc-v1.8.1-osx/ispc
-OSPRAY_SRCDIR=/Users/gda/OSPRay/ospray
-OSPRAY_OBJDIR=/Users/gda/OSPRay/ospray.obj
+OSPRAY_SRCDIR=/Users/gda/OSPRay/
+OSPRAY_OBJDIR=/Users/gda/OSPRay/obj
 CINEMA=/Users/gda/VolViewer/src
-endif
 endif
 
 DEBUG=-g -DDEBUG
@@ -34,11 +37,11 @@ else
 endif
 
 OSPRAY_INCDIRS = \
-	-I${OSPRAY_SRCDIR}/ \
-	-I${OSPRAY_SRCDIR}/ospray/include \
-	-I${OSPRAY_SRCDIR}/ospray/embree \
-	-I${OSPRAY_SRCDIR}/ospray/embree/common \
-	-I${OSPRAY_SRCDIR}/ospray/embree 
+	-I${OSPRAY_SRCDIR}/ospray \
+	-I${OSPRAY_SRCDIR}/ospray/ospray/include \
+	-I${OSPRAY_SRCDIR}/ospray/ospray/embree \
+	-I${OSPRAY_SRCDIR}/ospray/ospray/embree/common \
+	-I${OSPRAY_SRCDIR}/ospray/ospray/embree 
 
 CINEMA_INCDIRS = \
 	-I${CINEMA}/common \
@@ -100,4 +103,4 @@ endif
 
 sim.o : ${LIBNAME}
 dump.o : ${LIBNAME}
-clean: ; rm -rf *.io *.o *.idep *_ispc.h sim dump tdump libperlin.so libperlin.dylib
+clean: ; rm -rf *.io *.o *.idep *_ispc.h ${LIBNAME} sim dump tdump

@@ -2,8 +2,10 @@
 #include <fstream>
 
 #include "Renderer.h"
+// #include "Importer.h"
 
-Renderer::Renderer(int width, int height)
+Renderer::Renderer(int width, int height, bool shared) :
+	volume(shared)
 {
 	renderer = ospNewRenderer("vis_renderer");
 	camera.setRenderer(renderer);

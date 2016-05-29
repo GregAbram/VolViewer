@@ -34,6 +34,7 @@ private slots:
   void ambientTextChanged();
   void numAOSamplesTextChanged();
   void AORadiusTextChanged();
+  void stepSizeTextChanged();
 
 private:
   QSlider ambient_slider;
@@ -41,6 +42,8 @@ private:
 
   QLineEdit ao_number_of_samples_current;
   QLineEdit ao_radius_current;
+
+  QLineEdit step_size;
 
 	RenderProperties renderProperties;
 };

@@ -8,7 +8,7 @@ class TransferFunction;
 class Volume
 {
 public:
-		Volume();
+		Volume(bool shared = false);
 		~Volume();
 
 		void Initialize(bool shared);

@@ -38,6 +38,14 @@ RenderPropertiesEditor::RenderPropertiesEditor()
 	l->addWidget(&ao_radius_current, 1, 3, 1, 1);
 
 	connect(&ao_radius_current, SIGNAL(returnPressed()), this, SLOT(AORadiusTextChanged()));
+
+	l->addWidget(new QLabel("step scale"),  2, 2, 1, 1);
+	step_size.setText(QString::number(renderProperties.getStepScale()));
+	step_size.setValidator(new QDoubleValidator());
+
+	l->addWidget(&step_size, 2, 3, 1, 1);
+
+	connect(&step_size, SIGNAL(returnPressed()), this, SLOT(stepSizeTextChanged()));
 }
 
 float 
@@ -109,6 +117,14 @@ RenderPropertiesEditor::ambientTextChanged()
 	float a = atof(ambient_current.text().toStdString().c_str());
 	renderProperties.setAmbient(a);
 	ambient_slider.setValue((int)(100*a));
+	commit();
+}
+
+void
+RenderPropertiesEditor::stepSizeTextChanged()
+{
+	float a = atof(step_size.text().toStdString().c_str());
+	renderProperties.setStepScale(a);
 	commit();
 }
 

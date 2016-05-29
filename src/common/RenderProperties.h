@@ -16,12 +16,15 @@ public:
 	void setAmbient(float a);
 	void setAORadius(float r);
 	void setNumAOSamples(int n);
+	void setStepScale(float ss);
+	float getStepScale();
 	void commit();
 
 private:
 	float ambient;
 	float radius;
 	int   n_samples;
+	float stepScale;
 
 	OSPRenderer renderer;
 };
