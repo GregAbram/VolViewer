@@ -66,7 +66,6 @@ public:
 
 	void commit(OSPRenderer& renderer, Volume *volume)
 	{
-		printf("slices commit\n");
 		float planes[12];
 		int   visible[3];
 		int   clip[3];

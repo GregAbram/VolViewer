@@ -99,6 +99,5 @@ Isos::commit(Volume *vol)
 			v[k++] = values[i];
 		}
 
-	printf("committing %d Isovalues\n", k);
 	vol->SetIsovalues(k, v);
 }

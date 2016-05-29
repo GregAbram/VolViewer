@@ -87,4 +87,6 @@ private:
   float fovY;
   float aspect;
   bool modified;
+
+	bool new_state;
 };

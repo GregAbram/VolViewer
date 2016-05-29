@@ -67,8 +67,8 @@ namespace ospray {
 			for (int i = 0; i < planes->numItems; i++)
 			{
 				float *foo = (float *)(planes->data);
-				std::cerr << "Plane: " << i << "\n";
-				std::cerr << foo[i*4+0] << " "  << foo[i*4+1] << " " << foo[i*4+2] << " " << foo[i*4+3] << "\n";
+				// std::cerr << "Plane: " << i << "\n";
+				// std::cerr << foo[i*4+0] << " "  << foo[i*4+1] << " " << foo[i*4+2] << " " << foo[i*4+3] << "\n";
 			}
 			
       ispc::VisRenderer_setSlices(ispcEquivalent, planes->numItems, 

@@ -172,7 +172,6 @@ void
 Camera::loadState(Value& cam)
 {
 	float v[3];
-
 	std::stringstream p;
 	p.str(cam["frame of reference"].GetString());
 	p >> frame.l.vx.x >> frame.l.vx.y >> frame.l.vx.z
@@ -191,6 +190,12 @@ Camera::loadState(Value& cam)
 	if (cam.HasMember("Lights"))
 		cameraLights.loadState(cam["Lights"]);
 
+	new_state = true;
+
+	osp::affine3f phi_theta_frame = osp::affine3f::rotate(frame.p, osp::vec3f(1.0, 0.0, 0.0), phi) * osp::affine3f::rotate(frame.p, osp::vec3f(0.0, 1.0, 0.0), -theta) * frame;
+	osp::vec3f eye = xfmPoint(phi_theta_frame, osp::vec3f(0.0, 0.0, -eye_dist));
+	osp::vec3f dir = frame.p - eye;
+
 	commit();
 }
 
@@ -198,10 +203,11 @@ void
 Camera::commit()
 {
 	osp::vec3f e;
-	if (phi != 0.0 || theta != 0.0)
+	if (phi != 0.0 || theta != 0.0 || new_state)
 	{
 		osp::affine3f phi_theta_frame = osp::affine3f::rotate(frame.p, osp::vec3f(1.0, 0.0, 0.0), phi) * osp::affine3f::rotate(frame.p, osp::vec3f(0.0, 1.0, 0.0), -theta) * frame;
 		e = xfmPoint(phi_theta_frame, osp::vec3f(0.0, 0.0, -eye_dist));
+		new_state = false;
 	}
 	else
 	{

@@ -59,7 +59,6 @@ Volume::commit(bool commit_data)
 
 	if (commit_data)
 	{
-		std::cerr << "committing data\n";
 		ResetMinMax();
 		ospCommit(data);
 	}

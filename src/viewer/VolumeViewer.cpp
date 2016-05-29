@@ -211,6 +211,8 @@ void VolumeViewer::loadState(std::string statename)
 		return;
 	}
 
+	importFromFile(doc["State"]["Volume"].GetString());
+
 	if (doc["State"].HasMember("Render Properties") )
 	{
 		getRenderProperties()->loadState(doc["State"]["Render Properties"]);
@@ -223,7 +225,6 @@ void VolumeViewer::loadState(std::string statename)
 		getWindow()->commit();
 	}
 
-	importFromFile(doc["State"]["Volume"].GetString());
 
 	if (doc["State"].HasMember("TransferFunction"))
 		getTransferFunctionEditor().loadState(doc["State"]["TransferFunction"]);			// Encompases colormap and opacity
