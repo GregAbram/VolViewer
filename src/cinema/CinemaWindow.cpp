@@ -64,7 +64,7 @@ CinemaWindow::createDisplay()
 }
 #else
 bool
-CinemaWindow::createDisplay() {}
+CinemaWindow::createDisplay() { return false; }
 #endif
 
 void CinemaWindow::save(std::string filename)
