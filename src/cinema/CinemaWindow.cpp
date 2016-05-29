@@ -1,5 +1,5 @@
 #include "CinemaWindow.h"
-#include "mypng.h"
+#include "../common/mypng.h"
 #include "cinema_cfg.h"
 
 #include <iostream>

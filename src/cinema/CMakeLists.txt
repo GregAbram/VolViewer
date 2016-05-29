@@ -48,7 +48,6 @@ SET(SRCS ${SRCS}
   Cinema.cpp
 	Variable.cpp
 	util.cpp
-	mypng.cpp
   )
 
 CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cinema_cfg.h.in ${PROJECT_BINARY_DIR}/cinema_cfg.h)
