@@ -88,7 +88,7 @@ Renderer::LoadVolume(std::string volumeName)
 	getSlices().commit(getRenderer(), &volume);
 	getIsos().commit(&volume);
 	renderProperties.commit();
-	
+	CommitVolume();
 }
 
 static char xyzzy[10240];

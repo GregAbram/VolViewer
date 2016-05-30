@@ -3,6 +3,7 @@
 #include <sys/stat.h>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <vector>
 
 #include "Variable.h"
@@ -36,10 +37,7 @@ VariableFactory::Create(Value &json)
 
 		int i;
 		for (i = 0; i < registry.size(); i++)
-		{
-			std::cerr << "trying: " << registry[i].name << "\n";
 			if (registry[i].name == op) break;
-		}
 
 		if (i == registry.size())
 		{
@@ -84,12 +82,23 @@ void Variable::RenderDown(Renderer& r, string s, Document& doc)
 Variable *
 SlicePlaneVariable::New(Value &json)
 {
-	vector<int>axes;
-	if (json.HasMember("axes") && json["axes"].IsArray())
-		for (int i = 0; i <  json["axes"].Size(); i++)
-			axes.push_back(json["axes"][i].GetInt());
+	int axis = -1;
+	if (json.HasMember("axis"))
+	{
+			if (json["axis"].IsInt())
+				axis = json["axis"].GetInt();
+			
+			if (axis < 0 || axis > 2)
+			{
+				std::cerr << "Error: bad Cinema json: slice axis must be int [0,1,2]\n";
+				std::exit(1);
+			}
+	}
 	else
-		axes.push_back(0);
+	{
+		std::cerr << "Error: bad Cinema json: slice axis required\n";
+		std::exit(1);
+	}
 
 	vector<int>clips;
 	if (json.HasMember("clips") && json["clips"].IsArray())
@@ -119,12 +128,21 @@ SlicePlaneVariable::New(Value &json)
 	else
 		values.push_back(50);
 
-	return (Variable *) new SlicePlaneVariable(string("Slices"), axes, clips, visibles, flips, values);
+	stringstream ss;
+	ss << "Slice";
+	switch(axis)
+	{
+		case 0: ss << "X"; break;
+		case 1: ss << "Y"; break;
+		case 2: ss << "Z"; break;
+	}
+
+	return (Variable *) new SlicePlaneVariable(ss.str(), axis, clips, visibles, flips, values);
 }
 
-SlicePlaneVariable::SlicePlaneVariable(string name, vector<int>a, vector<int> c, vector<int> v, vector<int> f, vector<int> vals) : Variable(name)
+SlicePlaneVariable::SlicePlaneVariable(string name, int a, vector<int> c, vector<int> v, vector<int> f, vector<int> vals) : Variable(name)
 {
-	axes  	 = a;
+	axis  	 = a;
 	clips  	 = c;
 	visibles = v;
 	flips    = f;
@@ -133,87 +151,71 @@ SlicePlaneVariable::SlicePlaneVariable(string name, vector<int>a, vector<int> c,
 
 void  SlicePlaneVariable::Render(Renderer& r, string s, Document& doc)
 {
-	for (vector<int>::iterator ai = axes.begin(); ai != axes.end(); ai++)
+	for (vector<int>::iterator ci = clips.begin(); ci != clips.end(); ci++)
 	{
-		int axis = *ai;
+		int clip = *ci;
+		r.getSlices().SetClip(axis, clip);
 
 		string s1;
-		if (axes.size() > 1)
+		if (clips.size() > 1)
 		{
 			char buf[256];
-			sprintf(buf, "%s_%d", s.c_str(), axis);
+			sprintf(buf, "%s_%d", s.c_str(), clip);
 			s1 = string(buf);
-			SetIntAttr(doc, (name + "Axis").c_str(), axis);
+			SetIntAttr(doc, (name + "Clip").c_str(), clip);
 		}
 		else
 			s1 = s;
 
-		for (vector<int>::iterator ci = clips.begin(); ci != clips.end(); ci++)
+		for (vector<int>::iterator vi = visibles.begin(); vi != visibles.end(); vi++)
 		{
-			int clip = *ci;
-			r.getSlices().SetClip(axis, clip);
+			int visibility = *vi;
+			r.getSlices().SetVisible(axis, visibility);
 
 			string s2;
-			if (clips.size() > 1)
+			if (visibles.size() > 1)
 			{
 				char buf[256];
-				sprintf(buf, "%s_%d", s1.c_str(), clip);
+				sprintf(buf, "%s_%d", s1.c_str(), visibility);
 				s2 = string(buf);
-				SetIntAttr(doc, (name + "Clip").c_str(), clip);
+				SetIntAttr(doc, (name + "Visibility").c_str(), visibility);
 			}
 			else
 				s2 = s1;
 
-			for (vector<int>::iterator vi = visibles.begin(); vi != visibles.end(); vi++)
+			for (vector<int>::iterator fi = flips.begin(); fi != flips.end(); fi++)
 			{
-				int visibility = *vi;
-				r.getSlices().SetVisible(axis, visibility);
+				int flip = *fi;
+				r.getSlices().SetFlip(axis, flip == 1);
 
 				string s3;
-				if (visibles.size() > 1)
+				if (flips.size() > 1)
 				{
 					char buf[256];
-					sprintf(buf, "%s_%d", s2.c_str(), visibility);
+					sprintf(buf, "%s_%d", s2.c_str(), flip);
 					s3 = string(buf);
-					SetIntAttr(doc, (name + "Visibility").c_str(), visibility);
+					SetIntAttr(doc, (name + "Flip").c_str(), flip);
 				}
 				else
 					s3 = s2;
 
-				for (vector<int>::iterator fi = flips.begin(); fi != flips.end(); fi++)
+				for (vector<int>::iterator vi = values.begin(); vi != values.end(); vi++)
 				{
-					int flip = *fi;
-					r.getSlices().SetFlip(axis, flip == 1);
+					int value = *vi;
+					r.getSlices().SetValue(axis, value);
 
 					string s4;
-					if (flips.size() > 1)
+					if (values.size() > 1)
 					{
 						char buf[256];
-						sprintf(buf, "%s_%d", s3.c_str(), flip);
+						sprintf(buf, "%s_%d", s3.c_str(), value);
 						s4 = string(buf);
-						SetIntAttr(doc, (name + "Flip").c_str(), flip);
+						SetIntAttr(doc, name.c_str(), value);
 					}
 					else
 						s4 = s3;
 
-					for (vector<int>::iterator vi = values.begin(); vi != values.end(); vi++)
-					{
-						int value = *vi;
-						r.getSlices().SetValue(axis, value);
-
-						string s5;
-						if (values.size() > 1)
-						{
-							char buf[256];
-							sprintf(buf, "%s_%d", s4.c_str(), value);
-							s5 = string(buf);
-							SetIntAttr(doc, (name + "Value").c_str(), value);
-						}
-						else
-							s5 = s4;
-
-						RenderDown(r, s5, doc);
-					}
+					RenderDown(r, s4, doc);
 				}
 			}
 		}
@@ -222,12 +224,6 @@ void  SlicePlaneVariable::Render(Renderer& r, string s, Document& doc)
 
 string SlicePlaneVariable::GatherTemplate(string s, Document &doc)
 {
-	if (axes.size() > 1)
-	{
-		s = s + "_{" + name + "Axis}";
-		AddIntRangeArg(doc, name + "Axis", axes);
-	}
-
 	if (clips.size() > 1)
 	{
 		s = s + "_{" + name + "Clip}";
@@ -248,8 +244,8 @@ string SlicePlaneVariable::GatherTemplate(string s, Document &doc)
 
 	if (values.size() > 1)
 	{
-		s = s + "_{" + name + "Value}";
-		AddIntRangeArg(doc, name + "Value", values);
+		s = s + "_{" + name + "}";
+		AddIntRangeArg(doc, name, values);
 	}
 	
 	return down->GatherTemplate(s, doc);
@@ -299,15 +295,16 @@ void IsosurfaceVariable::Render(Renderer& r, string s, Document& doc)
 
 	for (int i = 0; i < values.size(); i++)
 	{
-		float v = values[i] / 99.0;
+		float v = values[i];
 		isos.SetValue(index, v);
 		isos.commit(r.getVolume());
+		r.getVolume()->commit();
 
 		if (values.size() > 1)
 		{
 			char buf[256];
 			sprintf(buf, "%s_%d", s.c_str(), values[i]);
-			SetDoubleAttr(doc, (name + "Value").c_str(), values[i]);
+			SetDoubleAttr(doc, name.c_str(), values[i]);
 			RenderDown(r, string(buf), doc);
 		}
 		else
@@ -321,8 +318,8 @@ string IsosurfaceVariable::GatherTemplate(string s, Document& doc)
 {
 	if (values.size() > 1)
 	{
-		s = s + "_{" + name + "Value}";
-		AddIntRangeArg(doc, name + "Value", values);
+		s = s + "_{" + name + "}";
+		AddIntRangeArg(doc, name, values);
 	}
 
 	return down->GatherTemplate(s, doc);

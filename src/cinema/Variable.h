@@ -104,17 +104,17 @@ class SlicePlaneVariable : public Variable
 {
 public:
 	static Variable *New(Value&);
-	SlicePlaneVariable(string n, vector<int>a, vector<int> c, vector<int> v, vector<int> f, vector<int> val);
+	SlicePlaneVariable(string n, int a, vector<int> c, vector<int> v, vector<int> f, vector<int> val);
 
 	void  Render(Renderer& r, string s, Document& doc);
 	string GatherTemplate(string, Document& doc);
 
 	int count() {
-		return axes.size() * clips.size() * visibles.size() * flips.size() * values.size() * down->count();
+		return clips.size() * visibles.size() * flips.size() * values.size() * down->count();
 	}
 
 private:
-	vector<int> axes;
+	int axis;
 	vector<int> clips;
 	vector<int> visibles;
 	vector<int> flips;

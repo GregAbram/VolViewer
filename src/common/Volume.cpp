@@ -50,7 +50,6 @@ Volume::commit(bool commit_data)
 		exit(1);
 	}
 
-
 	if (mod)
 	{
 		ospCommit(ospv);
@@ -167,6 +166,7 @@ Volume:: GetMinMax(float& _m, float& _M) {_m = m; _M = M; }
 void
 Volume:: SetIsovalues(int n, float *v)
 {
+	nIso = n;
 	if (! ospv) return;
 
 	if (n)
@@ -177,8 +177,7 @@ Volume:: SetIsovalues(int n, float *v)
 		ospSetData(ospv, "isovalues", ospNewData(nIso, OSP_FLOAT, isoValues));
 	}
 	else
-			ospSetData(ospv, "isovalues", NULL);
-	nIso = n;
+		ospSetData(ospv, "isovalues", NULL);
 	mod = true;
 }
 
