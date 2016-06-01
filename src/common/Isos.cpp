@@ -72,6 +72,7 @@ Isos::loadState(Value &section)
 		onoffs[i] = false;
 }
 
+
 void 
 Isos::saveState(Document &doc, Value &section)
 {
@@ -98,13 +99,6 @@ Isos::commit(Volume *vol)
 		{
 			v[k++] = values[i];
 		}
-
-#if 0
-	std::cerr << "sending " << k << " isovalues: ";
-	for (int i = 0; i < k; i++)
-			std::cerr << v[i] << " ";
-	std::cerr << "\n";
-#endif
 
 	vol->SetIsovalues(k, v);
 }

@@ -222,7 +222,7 @@ Volume::Import(const std::string &filename, TransferFunction& tf)
   std::ifstream in;
   in.open(filename.c_str());
   in >> x >> y >> z >> type >> rfile;
-  std::cerr << x << " " << y << " " << z << " " << type << " " << rfile << "\n";
+  // std::cerr << x << " " << y << " " << z << " " << type << " " << rfile << "\n";
   in.close();
 
   size_t k = x * y * z;

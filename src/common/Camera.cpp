@@ -196,6 +196,7 @@ Camera::loadState(Value& cam)
 	osp::vec3f eye = xfmPoint(phi_theta_frame, osp::vec3f(0.0, 0.0, -eye_dist));
 	osp::vec3f dir = frame.p - eye;
 
+
 	commit();
 }
 
@@ -215,6 +216,9 @@ Camera::commit()
 	}
 			
 	osp::vec3f d = frame.p - e;
+	// std::cerr << "eye: " << e.x << " " << e.y << " " << e.z << "\n";
+	// std::cerr << "dir: " << d.x << " " << d.y << " " << d.z << "\n";
+	// std::cerr << "up: " << frame.l.vy.x << " " << frame.l.vy.y << " " << frame.l.vy.z << "\n";
 
 	ospSetVec3f(ospCamera,"pos", e);
 	ospSetVec3f(ospCamera,"dir", d);

@@ -489,7 +489,6 @@ inline void VisRenderer_intersectIsosurface(VisRenderer *uniform renderer, Volum
 		{
       for (uniform int i=0; i<volume->numIsovalues; i++)
 			{
-print("H");
         if ((volume->isovalues[i] - sample0) * (volume->isovalues[i] - sample) <= 0.f) {
           const float tIso = t0 + (volume->isovalues[i] - sample0) / (sample - sample0) * (t - t0);
 
@@ -517,13 +516,6 @@ inline void VisRenderer_computeIsosurfaceSample(VisRenderer *uniform renderer,
                                                           varying vec4f &lambertianColor,
 																													varying vec3f &normal)
 {
-#if 0
-	print("CIS: %\n", volume->numIsovalues);
-	for (int i = 0; i < volume->numIsovalues; i++)
-			print(" %", volume->isovalues[i]);
-	print("\n");
-#endif
-
   //! Terminate if there are no isovalues.
   if (volume->numIsovalues == 0) {
     ray.t = infinity;
@@ -747,9 +739,6 @@ inline bool VisRenderer_intersect(uniform VisRenderer *uniform renderer,
   const float tMax = ray.t1;
 
   //! Offset ray by a fraction of the nominal ray step.
-#if 0
-	print("SS: %\n", renderer->stepScale);
-#endif
 
   const uniform float step = renderer->stepScale * (renderer->model->volumes[0]->samplingStep / renderer->model->volumes[0]->samplingRate);
   ray.t += 0.01 * step;
@@ -1077,10 +1066,7 @@ bool VisRenderer_AO_intersect(uniform Renderer *uniform pointer, varying ScreenS
 	// If the exit point is in front of the entry point (say, what?)
 	// then quit.   This is a ray termination.
   if (ray.t0 > ray.t1)
-	{
-		print("X 0\n");
     return true;
-	}
 
   const float tMax = ray.t1;
 
@@ -1104,10 +1090,7 @@ bool VisRenderer_AO_intersect(uniform Renderer *uniform pointer, varying ScreenS
   geometryRay.t = tMax; //! end of valid ray interval for traceRay().
   VisRenderer_intersectGeometry(renderer, geometryRay);
 	if (geometryRay.t < renderer->AOradius)
-	{
-		print("g");
 		return true;
-	}
 #endif
 
   //! Copy of the ray for slice intersection.
