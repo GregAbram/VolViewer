@@ -135,7 +135,8 @@ Camera::setupFrame(osp::vec3f eye, osp::vec3f center, osp::vec3f up)
 	osp::vec3f Z = normalize(center - eye);
 	osp::vec3f X = normalize(cross(Y, Z));
 
-	frame = osp::affine3f::AffineSpaceT(X, up, Z, center);
+	// frame = osp::affine3f::AffineSpaceT(X, up, Z, center);
+	frame = osp::affine3f(X, up, Z, center);
 
 	eye_dist = length(center - eye);
 }
