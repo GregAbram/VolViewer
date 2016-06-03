@@ -1,0 +1,66 @@
+# You'll need a VTK built without MPI.   I'm using 6.2, but it should work with most any
+# I'll refer to the VTK installation root as $VTK - there should be a
+# file $VTK/lib/cmake/vtk-6.x/VTKConfig.cmake 
+
+# Clone VolViewer source from GitHub
+
+VolViewer
+git clone git@github.com:TACC/VolViewer.git
+
+# and switch to json branch
+cd VolViewer 
+git checkout json
+
+# From here out, I'll refer to the root directory of the VolViewer tree as $ROOT
+# Untar the appropriate ISPC
+
+tar xzf VolViewer/ispc-v1.8.1-{linux,osx}.tar.gz
+
+# Now we'll build OSPRay.  First link in the visrender renderer
+cd OSPRay/ospray/render
+
+cd $ROOT/OSPRay/ospray/render
+ln -s ../../..//src/ispc visrender
+
+cd $ROOT/OSPRay
+mkdir build
+cd build
+
+GENERAL:
+	cmake ..
+
+MAVERICK:
+	module load gcc/4.9.3 qt/4.8.4
+	CC=`which gcc` CXX=`which c++` cmake -DOSPRAY_BUILD_ISA=AVX -DGCC_VERSION=4.9.3 ..
+
+make -j 6
+
+cd $ROOT/VolViewer/src
+
+mkdir common.obj
+cd common.obj
+
+GENERAL:
+	cmake ../common
+MAVERICK:
+	CC=`which gcc` CXX=`which c++` cmake -DOSPRAY_OBJDIR=$ROOT/OSPRay/build -DOSPRAY_SRCDIR=$ROOT/OSPRay ../common
+make -j 6
+
+mkdir ../viewer.obj
+cd ../viewer.obj
+LD=`which gcc` CC=`which gcc` CXX=`which c++` cmake -DVTK_DIR=$VTK/lib/cmake/vtk-6.2 -DOSPRAY_OBJDIR=$ROOT/OSPRay/build -DOSPRAY_SRCDIR=$ROOT/OSPRay ../viewer
+make -j 6
+
+mkdir ../cinema.obj
+cd ../cinema.obj
+
+GENERAL:
+	cmake ../common
+MAVERICK:
+	LD=`which cc` CC=`which cc` CXX=`which c++` cmake -DVTK_DIR=$VTK/lib/cmake/vtk-6.2 -DOSPRAY_OBJDIR=$ROOT/OSPRay/build -DOSPRAY_SRCDIR=$ROOT/OSPRay ../viewer
+make -j 6
+
+cd $ROOT/VolViewer
+
+Edit {linux,mac}.env and change ROOT and VTK appropriately.  Now linux.env is an environment file you can source directly or add to your bashrc
+
