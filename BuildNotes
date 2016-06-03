@@ -41,21 +41,24 @@ mkdir common.obj
 cd common.obj
 
 GENERAL:
-	cmake ../common
+	cmake -DOSPRAY_OBJDIR=$ROOT/OSPRay/build -DOSPRAY_SRCDIR=$ROOT/OSPRay ../common
 MAVERICK:
 	CC=`which gcc` CXX=`which c++` cmake -DOSPRAY_OBJDIR=$ROOT/OSPRay/build -DOSPRAY_SRCDIR=$ROOT/OSPRay ../common
 make -j 6
 
 mkdir ../viewer.obj
 cd ../viewer.obj
-LD=`which gcc` CC=`which gcc` CXX=`which c++` cmake -DVTK_DIR=$VTK/lib/cmake/vtk-6.2 -DOSPRAY_OBJDIR=$ROOT/OSPRay/build -DOSPRAY_SRCDIR=$ROOT/OSPRay ../viewer
+GENERAL:
+	cmake -DOSPRAY_OBJDIR=$ROOT/OSPRay/build -DOSPRAY_SRCDIR=$ROOT/OSPRay ../viewer
+MAVERICK:
+	LD=`which gcc` CC=`which gcc` CXX=`which c++` cmake -DVTK_DIR=$VTK/lib/cmake/vtk-6.2 -DOSPRAY_OBJDIR=$ROOT/OSPRay/build -DOSPRAY_SRCDIR=$ROOT/OSPRay ../viewer
 make -j 6
 
 mkdir ../cinema.obj
 cd ../cinema.obj
 
 GENERAL:
-	cmake ../common
+	cmake -DOSPRAY_OBJDIR=$ROOT/OSPRay/build -DOSPRAY_SRCDIR=$ROOT/OSPRay ../cinema
 MAVERICK:
 	LD=`which cc` CC=`which cc` CXX=`which c++` cmake -DVTK_DIR=$VTK/lib/cmake/vtk-6.2 -DOSPRAY_OBJDIR=$ROOT/OSPRay/build -DOSPRAY_SRCDIR=$ROOT/OSPRay ../viewer
 make -j 6
