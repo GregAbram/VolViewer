@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/../ispc)
 
-SET(LIBS ${LIBRS} ospray)
+SET(LIBS ${LIBS} ospray)
 
 SET(OSPRAY_SRCDIR "" CACHE FILEPATH "source directory of OSPRAY")
 IF(OSPRAY_SRCDIR)
