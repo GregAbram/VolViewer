@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ospray/ospray.h"
+#include <vtkImageData.h>
 #include <vector>
 
 class TransferFunction;
@@ -34,6 +35,7 @@ public:
 		void Attach(const std::string&, int, int, int, void *, TransferFunction&);
 
 private:
+		vtkImageData *imagedata;
 
 		void _setMinMax(void *v);
 

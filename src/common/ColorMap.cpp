@@ -80,6 +80,7 @@ ColorMap::commit(TransferFunction& t)
 }
 
 vector< ColorMap >
+
 ColorMap::load_colormap_directory()
 {
 	vector< ColorMap > colormaps;

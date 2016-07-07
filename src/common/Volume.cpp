@@ -1,13 +1,18 @@
 #include <iostream>
 #include <fstream>
+#include <vtkType.h>
+#include <vtkNew.h>
+#include <vtkImageData.h>
+#include <vtkXMLImageDataReader.h>
 #include "Volume.h"
 #include "TransferFunction.h"
 
 Volume::Volume() :
 		shared(false), nIso(0), isoValues(NULL),
 		voxels(NULL), mod(true), data(NULL),
-		type("none"), x(-1), ospv(NULL)
-{}
+		type("none"), x(-1), ospv(NULL), imagedata(NULL)
+{
+}
 
 void
 Volume::Initialize(bool s)
@@ -36,6 +41,8 @@ Volume::Initialize(bool s)
 
 Volume::~Volume()
 { 
+	if (imagedata) imagedata->Delete();
+
 	if (ospv) ospRelease(ospv); 
 	if (data) ospRelease(data); 
 	if (voxels) free(voxels); 
@@ -215,49 +222,113 @@ Volume:: _setMinMax(void *v)
 void 
 Volume::Import(const std::string &filename, TransferFunction& tf)
 {
-  size_t x, y, z;
-  std::string type;
-  char rfile[256];
+	size_t x, y, z;
+	std::string type;
+	char rfile[256];
+	void *data;
 
-  std::string dir((filename.find_last_of("/") == std::string::npos) ? "" : filename.substr(0, filename.find_last_of("/")+1));
-    
-  std::ifstream in;
-  in.open(filename.c_str());
-  in >> x >> y >> z >> type >> rfile;
-  std::cerr << x << " " << y << " " << z << " " << type << " " << rfile << "\n";
-  in.close();
+	std::string dir((filename.find_last_of("/") == std::string::npos) ? "" : filename.substr(0, filename.find_last_of("/")+1));
 
-  size_t k = x * y * z;
-  size_t sz;
-  if (type == "float")
-    sz = k * sizeof(float);
-  else if (type == "uchar")
-    sz = k;
-  else
-  {
-    std::cerr << "unrecognized type: " << type << "\n";
-    std::exit(1);
-  }
+	if (filename.substr(filename.find_last_of(".")+1) == "vol")
+	{
+		std::ifstream in;
+		in.open(filename.c_str());
+		in >> x >> y >> z >> type >> rfile;
+		std::cerr << x << " " << y << " " << z << " " << type << " " << rfile << "\n";
+		in.close();
 
-  void *data = (void *)new char[sz];
+		size_t k = x * y * z;
+		size_t sz;
+		if (type == "float")
+			sz = k * sizeof(float);
+		else if (type == "uchar")
+			sz = k;
+		else
+		{
+			std::cerr << "unrecognized type: " << type << "\n";
+			std::exit(1);
+		}
 
-  in.open(rfile[0] == '/' ? rfile : (dir + rfile).c_str(), std::ios::binary | std::ios::in);
-  in.read((char *)data, sz);
-  in.close();
+		data = (void *)new char[sz];
 
-	Initialize(false);
+		in.open(rfile[0] == '/' ? rfile : (dir + rfile).c_str(), std::ios::binary | std::ios::in);
+		in.read((char *)data, sz);
+		in.close();
 
-  SetDimensions(x, y, z);
-  SetType(type);
-  SetSamplingRate(1.0);
-  SetTransferFunction(tf);
-  SetVoxels(data);
-  commit();
+		Initialize(false);
+	}
+	else if (filename.substr(filename.find_last_of(".")+1) == "vti")
+	{
+		vtkXMLImageDataReader *rdr = vtkXMLImageDataReader::New();
+		rdr->SetFileName(filename.c_str());
+		std::cerr << "loading VTI\n";
+		rdr->Update();
+		std::cerr << "loading VTI done\n";
 
-  float m, M;
-  GetMinMax(m, M);
-  tf.SetMin(m);
-  tf.SetMax(M);
+		imagedata = rdr->GetOutput();
+		imagedata->Register(imagedata);
+		rdr->Delete();
+
+		int *xyz = imagedata->GetDimensions();
+		
+		x = xyz[0];
+		y = xyz[1];
+		z = xyz[2];
+
+		if (imagedata->GetScalarType() == VTK_UNSIGNED_CHAR)
+		{
+			std::cerr << "Loading UCHAR\n";
+			type = "uchar";
+			data = imagedata->GetScalarPointer();
+			Initialize(true);
+			std::cerr << "Loading UCHAR done\n";
+		}
+		else if (imagedata->GetScalarType() == VTK_FLOAT)
+		{
+			std::cerr << "Loading FLOAT\n";
+			type = "float";
+			data = imagedata->GetScalarPointer();
+			Initialize(true);
+			std::cerr << "Loading FLOAT done\n";
+		}
+		else if (imagedata->GetScalarType() == VTK_DOUBLE)
+		{
+			std::cerr << "Loading DOUBLE\n";
+			type = "float";
+			data = (void *) new float[x*y*z*sizeof(float)];
+			float *dst = (float *)data;
+			double *src = (double *)imagedata->GetScalarPointer();
+			for (int i = 0; i < x*y*z; i++)
+				*dst++ = (float) *src++;
+			imagedata->Delete();
+			imagedata = NULL;
+			Initialize(false);
+			std::cerr << "Loading DOUBLE done\n";
+		}
+		else
+		{
+			std::cerr << "Can only handle unsigned char, float and double VTIs\n";
+			exit(1);
+		}
+	}
+	else
+	{
+		std::cerr << "Can only handle .vol and .vti files\n";
+		exit(1);
+	}
+
+
+	SetDimensions(x, y, z);
+	SetType(type);
+	SetSamplingRate(1.0);
+	SetTransferFunction(tf);
+	SetVoxels(data);
+	commit();
+
+	float m, M;
+	GetMinMax(m, M);
+	tf.SetMin(m);
+	tf.SetMax(M);
 }
 
 void
@@ -274,7 +345,7 @@ Volume::Attach(const std::string& type, int xsz, int ysz, int zsz, void *data, T
 void
 VolumeSeries::Import(const std::string &filename, TransferFunction& tf)
 {
-	if (filename.substr(filename.rfind('.')) == ".vol")
+	if (filename.substr(filename.rfind('.')) == ".vol" || filename.substr(filename.rfind('.')) == ".vti")
 	{
 		series.resize(1);
 		series[0].Import(filename, tf);

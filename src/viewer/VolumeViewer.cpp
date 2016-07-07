@@ -55,10 +55,10 @@ VolumeViewer::VolumeViewer(bool showFrameRate)
 	// isosEditor.commit(currentVolume);
 
 
+	// raise();
 	osprayWindow->Clear();
-	raise();
-  show();
-	raise();
+	show();
+	// raise();
 }
 
 void 
@@ -134,7 +134,7 @@ VolumeViewer::resetCamera()
 void
 VolumeViewer::openVolume()
 {
-  QString filename = QFileDialog::getOpenFileName(this, tr("Load Volume"), ".", "volumes (*.vol)");
+  QString filename = QFileDialog::getOpenFileName(this, tr("Load Volume"), ".", "volumes (*.vol *.vti)");
 
   if(filename.isEmpty())
     return;

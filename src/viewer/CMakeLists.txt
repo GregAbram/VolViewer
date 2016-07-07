@@ -90,3 +90,7 @@ TARGET_LINK_LIBRARIES(viewer ${LIBS} png ${VTK_LIBRARIES})
 INSTALL(TARGETS viewer DESTINATION bin)
 # ------------------------------------------------------------
 
+
+add_executable(Test tst.cpp)
+target_link_libraries(Test ${VTK_LIBRARIES})
+

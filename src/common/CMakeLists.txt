@@ -4,6 +4,9 @@ INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/../ispc)
 
 SET(LIBS ${LIBRS} ospray)
 
+FIND_PACKAGE(VTK 6.2 REQUIRED NO_MODULE)
+INCLUDE(${VTK_USE_FILE})
+
 SET(OSPRAY_SRCDIR "" CACHE FILEPATH "source directory of OSPRAY")
 IF(OSPRAY_SRCDIR)
   INCLUDE_DIRECTORIES(${OSPRAY_SRCDIR}
@@ -33,5 +36,9 @@ ADD_LIBRARY(common
 						ColorMap.cpp
 						mypng.cpp)
 
-TARGET_LINK_LIBRARIES(common ${LIBS})
+TARGET_LINK_LIBRARIES(common ${LIBS} png ${VTK_LIBRARIES})
+
+add_executable(Test tst.cpp)
+target_link_libraries(Test ${VTK_LIBRARIES})
+
 

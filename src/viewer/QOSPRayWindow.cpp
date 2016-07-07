@@ -93,6 +93,7 @@ void QOSPRayWindow::setBenchmarkParameters(int benchmarkWarmUpFrames, int benchm
 
 void QOSPRayWindow::paintGL()
 {
+  Clear();
   if(!renderingEnabled || !frameBuffer || !renderer)
     {
       return;

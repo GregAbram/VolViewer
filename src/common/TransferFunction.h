@@ -84,7 +84,7 @@ public:
 	void setColors(vector<osp::vec3f> c) 
 	{ 
 		colors = c; 
-  }
+	}
 
 	void showColors()
 	{
