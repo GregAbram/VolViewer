@@ -14,15 +14,11 @@
 class Camera
 {
 public:
-  Camera() :
-				modified(true), 
-				phi(0.0),
-				theta(0.0)
-  {
-    frame = osp::affine3f(embree::one);
+	Camera() : modified(true), phi(0.0), theta(0.0) {
+		frame = osp::affine3f(embree::one);
 		ospCamera = ospNewCamera("perspective");
 		modified = true;
-  }
+	}
 
 	~Camera()
 	{
@@ -30,6 +26,8 @@ public:
 	}
 
 	void setRenderer(OSPRenderer r);
+
+	void setPCU(osp::vec3f p, osp::vec3f c, osp::vec3f u);
 
 	osp::vec3f getPos();
 	void getPos(float* p);
@@ -49,25 +47,27 @@ public:
 	void setPhi(int iphi);
 	void setTheta(int itheta);
 
-	float			 getFovY();
-	float			 getAspect();
+	float getFovY();
+	float getAspect();
 
 	void setFovY(float f);
 	void setAspect(float a);
 
-  void setupFrame(osp::vec3f, osp::vec3f, osp::vec3f);
 
 	void saveState(Document &doc, Value &section);
 	void loadState(Value& cam);
 
 	void commit();
 
-	void rotateFrame(float t, float p);
+	void rotateFrame(float dx, float dy);
 
 	void zoom(float dy);
 	Lights *getLights();
 
+  	void setupFrame();
+
 private:
+
 	OSPCamera ospCamera;
 	OSPRenderer renderer;
 
@@ -75,16 +75,19 @@ private:
 
 	float phi, theta; 
 
-  osp::affine3f frame;
+	// These are the core user-specifiable parameters
 
-  osp::vec3f pos;
-  osp::vec3f dir;
-  osp::vec3f up;
-
-	float eye_dist;
 	osp::vec3f center;
+	osp::vec3f pos;
+	osp::vec3f up;
+	float aov;
 
-  float fovY;
-  float aspect;
-  bool modified;
+	// These are derived from the above
+
+	osp::vec3f dir;
+	osp::vec3f right;
+	osp::affine3f frame;
+
+	float aspect;
+	bool modified;
 };

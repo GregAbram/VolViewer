@@ -34,11 +34,8 @@ ADD_LIBRARY(common
 						RenderProperties.cpp 
 						Volume.cpp 
 						ColorMap.cpp
+						VTIReader.cpp
 						mypng.cpp)
 
 TARGET_LINK_LIBRARIES(common ${LIBS} png ${VTK_LIBRARIES})
-
-add_executable(Test tst.cpp)
-target_link_libraries(Test ${VTK_LIBRARIES})
-
 

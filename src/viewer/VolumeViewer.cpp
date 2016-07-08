@@ -127,6 +127,7 @@ VolumeViewer::resetCamera()
 	osp::vec3f center((x-1)/2.0, (y-1)/2.0, (z-1)/2.0);
 	osp::vec3f up(0.0, 1.0, 0.0);
 
+	std::cerr << "Setting eye = " << eye.x << " " << eye.y << " " << eye.z << "\n";
 	getWindow()->getCameraEditor()->setupFrame(eye, center, up);
 	getWindow()->getCameraEditor()->commit();
 }

@@ -276,10 +276,14 @@ bool CameraEditor::getFOV(float& f)
 void 
 CameraEditor::setupFrame(osp::vec3f e, osp::vec3f c, osp::vec3f u)
 {
+	std::cerr << "eye:    " << e.x << " " << e.y << " " << e.z << "\n";
+	std::cerr << "center: " << c.x << " " << c.y << " " << c.z << "\n";
+	std::cerr << "up:     " << u.x << " " << u.y << " " << u.z << "\n";
 	setEye(e);
 	setCenter(c);
 	setUp(u);
-	camera.setupFrame(e, c, u);
+
+	camera.setPCU(e, c, u);
 }
 
 void CameraEditor::rotateFrame(float du, float dv)
@@ -291,7 +295,7 @@ void CameraEditor::rotateFrame(float du, float dv)
 
 void CameraEditor::zoom(float d)
 {
-  camera.zoom(d);
+	camera.zoom(d);
 	updateEditorFromCamera();
 	camera.commit();
 }
@@ -316,7 +320,7 @@ void CameraEditor::commit()
 
 	if (getEye(eye) && getCenter(center) && getUp(up) && getFOV(f))
 	{
-		camera.setupFrame(eye, center, up);
+		setupFrame(eye, center, up);
 		camera.setFovY(f);
 	}
 	else
